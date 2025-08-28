@@ -1,0 +1,97 @@
+/* Root & wrapper */
+#pet-root {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 2147483647;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+#pet-wrap {
+  position: relative;           /* bubble is positioned relative to this */
+  display: block;
+  user-select: none;
+  --avatar: 72px;               /* keep dog constant size */
+  --gap: 10px;                  /* space between dog and bubble */
+  --tail-y: 36px;               /* JS updates this so tail hits the mouth */
+}
+
+/* ✅ Constant-size dog (won’t change when bubble grows) */
+.pet-avatar {
+  width: var(--avatar);
+  height: var(--avatar);
+  background: center / contain no-repeat;
+  cursor: grab;
+  animation: petFloat 4s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes petFloat {
+  0% { transform: translateY(0) }
+  50% { transform: translateY(-6px) }
+  100% { transform: translateY(0) }
+}
+
+/* Speech bubble — absolutely positioned so it never resizes the avatar */
+.pet-bubble {
+  position: absolute;
+  max-width: min(32ch, calc(100vw - 160px));   /* natural line length */
+  min-width: 16ch;
+  background: #fff; color: #000;
+  border: 1px solid rgba(0,0,0,.14);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.14);
+  padding: 10px 14px;
+  font-size: clamp(13px, 0.95rem, 15px);
+  line-height: 1.35;
+  text-wrap: pretty;            /* nicer wrapping when supported */
+  overflow-wrap: break-word;
+  hyphens: auto;
+
+  opacity: 0;
+  transform: translateY(4px) scale(.98);
+  transition: opacity .22s ease, transform .22s ease;
+  pointer-events: none;         /* display-only */
+}
+
+/* show/hide */
+.pet-bubble.show   { opacity: 1; transform: translateY(0) scale(1); }
+.pet-bubble.fadeout{ opacity: 0; transform: translateY(4px) scale(.98); }
+
+/* ▸ Right-hand bubble (dog facing right) */
+.pet-bubble.right {
+  left: calc(var(--avatar) + var(--gap));
+}
+.pet-bubble.right::before,
+.pet-bubble.right::after {
+  content: "";
+  position: absolute;
+  top: var(--tail-y);
+  left: -10px;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+}
+.pet-bubble.right::before { border-right: 10px solid #fff; }
+.pet-bubble.right::after  {
+  left: -11px;
+  border-right: 11px solid rgba(0,0,0,.14);    /* subtle border/shadow */
+  filter: blur(.2px);
+}
+
+/* ◂ Left-hand bubble (when there’s no room on the right) */
+.pet-bubble.left {
+  right: calc(var(--avatar) + var(--gap));
+}
+.pet-bubble.left::before,
+.pet-bubble.left::after {
+  content: "";
+  position: absolute;
+  top: var(--tail-y);
+  right: -10px;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+}
+.pet-bubble.left::before  { border-left: 10px solid #fff; }
+.pet-bubble.left::after   {
+  right: -11px;
+  border-left: 11px solid rgba(0,0,0,.14);
+  filter: blur(.2px);
+}
