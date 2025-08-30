@@ -9,16 +9,18 @@
       .wrap { max-width: 720px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
       h1 { margin: 0 0 8px; font-size: 24px; }
       p  { margin: 0 0 16px; color: #444; }
-      textarea { width: 100%; min-height: 180px; font: 15px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+      textarea { width: 100%; min-height: 180px; font: 15px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace; }
       .row { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
-      button { padding: 10px 14px; border-radius: 10px; border: 1px solid #ddd; background: #111; color: #fff; cursor: pointer; }
+      button { padding: 10px 14px; border-radius: 10px; border: 1px solid #ddd; background: #111; color: #fff; cursor: pointer; transition: transform .08s ease, opacity .2s ease; }
+      button:active { transform: scale(1.03); }
+      button.is-sending { transform: scale(1.08); }
       button.secondary { background: #fff; color: #111; }
       .hint { font-size: 13px; color: #666; margin-top: 8px; }
       .ok { color: #0a7f2e; }
       .err { color: #b00020; }
     </style>
   </head>
-  <body> 
+  <body>
     <div class="wrap">
       <h1>PET Control Panel</h1>
       <p>Add custom pep lines for your PET. One line per row.</p>
@@ -31,79 +33,102 @@
       </div>
 
       <div id="status" class="hint"></div>
-      <div class="hint">Note: Works only in Chrome with the PET extension installed and this site whitelisted in the extension manifest.</div>
+      <div class="hint">Works only in Google Chrome with the PET extension installed, and this site whitelisted in the manifest.</div>
     </div>
 
     <script>
-      // 1) Replace with your real extension ID (from chrome://extensions)
       const EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd";
 
-      // 2) Helper refs
       const statusEl = document.getElementById('status');
       const linesEl  = document.getElementById('lines');
+      const saveBtn  = document.getElementById('save');
+      const loadBtn  = document.getElementById('load');
 
-      function showStatus(msg, ok = true) {
-        statusEl.textContent = msg;
-        statusEl.className = "hint " + (ok ? "ok" : "err");
-      }
+      const canUseAPI = () =>
+        typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.sendMessage === "function";
 
-      function getLinesFromTextarea() {
-        return linesEl.value.split('\n').map(s => s.trim()).filter(Boolean);
-      }
-
-      function canUseAPI() {
-        return typeof chrome !== "undefined" && !!chrome.runtime?.sendMessage;
-      }
+      const getLines = () =>
+        linesEl.value.split('\n').map(s => s.trim()).filter(Boolean);
 
       function sendToPET(payload, cb) {
         if (!canUseAPI()) {
-          showStatus("This page must be opened in Chrome with the PET extension installed.", false);
-          return;
+          statusEl.textContent = "Open this page in Google Chrome with the PET extension installed.";
+          statusEl.className = "hint err";
+          cb?.(null); return;
         }
         chrome.runtime.sendMessage(EXT_ID, payload, (resp) => {
           if (chrome.runtime.lastError) {
-            showStatus("Could not reach PET: " + chrome.runtime.lastError.message, false);
-            cb?.(null);
-            return;
+            statusEl.textContent = "Could not reach PET: " + chrome.runtime.lastError.message;
+            statusEl.className = "hint err";
+            cb?.(null); return;
           }
           cb?.(resp);
         });
       }
 
-      // Save
-      document.getElementById('save').addEventListener('click', () => {
-        const lines = getLinesFromTextarea();
-        if (!lines.length) { showStatus("Add at least one line.", false); return; }
+      saveBtn.addEventListener('click', () => {
+        const lines = getLines();
+        if (!lines.length) {
+          statusEl.textContent = "Add at least one line.";
+          statusEl.className = "hint err";
+          return;
+        }
+
+        const sayNow = lines[lines.length - 1]; // last non-empty line
+        saveBtn.classList.add('is-sending');
+        saveBtn.disabled = true;
+
+        // 1) Save lines
         sendToPET({ type: "PET_ADD_LINES", lines }, (resp) => {
-          if (resp?.ok) showStatus(`Saved! PET now has ${resp.count} custom lines.`);
-          else showStatus("PET error: " + (resp?.error || "Unknown"), false);
+          saveBtn.classList.remove('is-sending');
+          saveBtn.disabled = false;
+
+          if (!(resp && resp.ok)) {
+            statusEl.textContent = "PET error: " + (resp?.error || "Unknown");
+            statusEl.className = "hint err";
+            return;
+          }
+
+          // 2) Explicitly tell PET to say the last line now (broadcast)
+          sendToPET({ type: "PET_SAY_NOW", text: sayNow }, (resp2) => {
+            if (resp2?.ok) {
+              statusEl.textContent = `Saved & said: “${sayNow}”`;
+              statusEl.className = "hint ok";
+            } else {
+              statusEl.textContent = "Saved, but could not trigger speech.";
+              statusEl.className = "hint err";
+            }
+          });
         });
       });
 
-      // Load
-      document.getElementById('load').addEventListener('click', () => {
+      loadBtn.addEventListener('click', () => {
         sendToPET({ type: "PET_GET_LINES" }, (resp) => {
           if (resp?.ok) {
             linesEl.value = (resp.lines || []).join('\n');
-            showStatus(`Loaded ${resp.lines?.length || 0} lines from PET.`);
+            statusEl.textContent = `Loaded ${resp.lines?.length || 0} lines from PET.`;
+            statusEl.className = "hint ok";
           } else {
-            showStatus("PET error: " + (resp?.error || "Unknown"), false);
+            statusEl.textContent = "PET error: " + (resp?.error || "Unknown");
+            statusEl.className = "hint err";
           }
         });
       });
 
-      // Prefill on page load + verify connectivity
       window.addEventListener('DOMContentLoaded', () => {
         if (!canUseAPI()) {
-          showStatus("Chrome API not available. Open this page in Chrome on desktop.", false);
+          statusEl.textContent = "Chrome API not available. Use Google Chrome on desktop.";
+          statusEl.className = "hint err";
           return;
         }
         sendToPET({ type: "PET_GET_LINES" }, (resp) => {
           if (resp?.ok) {
             linesEl.value = (resp.lines || []).join('\n');
-            showStatus(`Connected to PET. ${resp.lines?.length || 0} custom lines loaded.`);
+            statusEl.textContent = `Connected to PET. ${resp.lines?.length || 0} custom lines loaded.`;
+            statusEl.className = "hint ok";
           } else {
-            showStatus("Could not connect to PET. Check that this site is whitelisted in the extension manifest.", false);
+            statusEl.textContent = "Could not connect to PET. Check manifest origins and reload the extension.";
+            statusEl.className = "hint err";
           }
         });
       });
