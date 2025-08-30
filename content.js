@@ -1,55 +1,33 @@
 if (!window.__pet_injected__) {
   window.__pet_injected__ = true;
-  console.log("[PET] content script injected");
 
-  // --- DOM -------------------------------------------------------------------
   const root = document.createElement('div');
   root.id = 'pet-root';
   document.documentElement.appendChild(root);
 
   root.innerHTML = `
-    <div id="pet-wrap">
+    <div class="pet-wrap">
       <div class="pet-avatar" id="pet-avatar"
            style="background-image:url(${chrome.runtime.getURL('assets/pet.png')});"
-           title="Drag me or click me for a pep"></div>
+           title="Drag or click me"></div>
       <div class="pet-bubble right" id="pet-bubble" role="status" aria-live="polite">
-        <div id="pet-text">Hi! I’m PET. Click me for a pep!</div>
+        <div id="pet-text">Hi! I’m PET. Need a nudge?</div>
       </div>
     </div>
   `;
 
-  const wrap   = document.getElementById('pet-wrap');
-  const avatar = document.getElementById('pet-avatar');
-  const bubble = document.getElementById('pet-bubble');
-  const textEl = document.getElementById('pet-text');
+  const wrap   = root.querySelector('.pet-wrap');
+  const avatar = root.querySelector('#pet-avatar');
+  const bubble = root.querySelector('#pet-bubble');
+  const textEl = root.querySelector('#pet-text');
 
-  // --- Drag whole widget by the avatar ---------------------------------------
-  (function drag(handle, container) {
-    let down = false, sx=0, sy=0, sl=0, st=0;
-    const getPos = () => container.getBoundingClientRect();
-    const onDown = (e) => {
-      down = true;
-      handle.style.cursor = 'grabbing';
-      const { left, top } = getPos();
-      sl = left; st = top; sx = e.clientX; sy = e.clientY;
-      e.preventDefault();
-      bubble.classList.remove('show'); // hide while dragging
-    };
-    const onMove = (e) => {
-      if (!down) return;
-      container.style.position = 'fixed';
-      container.style.left = `${sl + (e.clientX - sx)}px`;
-      container.style.top  = `${st + (e.clientY - sy)}px`;
-      container.style.right = 'auto';
-      container.style.bottom = 'auto';
-    };
-    const onUp = () => { down = false; handle.style.cursor = 'grab'; };
-    handle.addEventListener('mousedown', onDown);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-  })(avatar, root);
+  const getMouthY = () => {
+    const v = getComputedStyle(wrap).getPropertyValue('--mouth-y').trim();
+    const n = parseInt(v || '28', 10);
+    return Number.isFinite(n) ? n : 28;
+  };
 
-  // --- Messages ---------------------------------------------------------------
+  // Defaults + user lines
   const DEFAULTS = [
     "Small steps still move you forward.",
     "Momentum beats motivation—start tiny.",
@@ -62,64 +40,44 @@ if (!window.__pet_injected__) {
     if (Array.isArray(cfg.petCustomLines)) customLines = cfg.petCustomLines;
   });
 
-  // --- Bubble placement logic -------------------------------------------------
-  const AVATAR = 72;                 // keep in sync with CSS --avatar
-  const GAP    = 10;
-  const MARGIN = 8;
-
-  function placeBubble() {
-    // We want the tail to come from the dog's mouth.
-    // Approx mouth Y ≈ 55% of avatar height (tweak to taste).
-    const mouthY = Math.round(AVATAR * 0.55);
-
-    // Ensure bubble is measurable
-    bubble.style.visibility = 'hidden';
-    bubble.classList.add('show');
-
-    const rectBubble = bubble.getBoundingClientRect();
-    const rectRoot   = root.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    // Prefer right side; fall back to left if not enough space
-    let useRight = (rectRoot.right + GAP + rectBubble.width + MARGIN < vw);
-    bubble.classList.toggle('right', useRight);
-    bubble.classList.toggle('left', !useRight);
-
-    // Horizontal position relative to wrap
-    if (useRight) {
-      bubble.style.left = (AVATAR + GAP) + 'px';
-      bubble.style.right = '';
-    } else {
-      bubble.style.right = (AVATAR + GAP) + 'px';
-      bubble.style.left = '';
-    }
-
-    // Vertical: center bubble on mouth, then clamp to viewport
-    let topRel = mouthY - rectBubble.height / 2;                       // relative to wrap
-    let absTop = rectRoot.top + topRel;                                // absolute on page
-    absTop = Math.max(MARGIN, Math.min(vh - rectBubble.height - MARGIN, absTop));
-    topRel = absTop - rectRoot.top;
-    bubble.style.top = `${Math.round(topRel)}px`;
-
-    // Set the tail position inside the bubble so it touches the mouth
-    const tailY = Math.round(mouthY - topRel - 8); // 8 = triangle half-height tweak
-    bubble.style.setProperty('--tail-y', `${Math.max(10, Math.min(rectBubble.height - 18, tailY))}px`);
-
-    bubble.style.visibility = '';
-  }
-
-  // --- Show/hide with natural timing -----------------------------------------
   let timer = null;
+
+  // Position bubble to mouth and choose side
+
+  function positionBubble() {
+  const rect = wrap.getBoundingClientRect();
+  const spaceRight = window.innerWidth - rect.right;
+  const spaceLeft  = rect.left;
+  const preferRight = spaceRight >= 220 || spaceRight > spaceLeft;
+
+  bubble.classList.toggle('right', preferRight);
+  bubble.classList.toggle('left', !preferRight);
+
+  // Anchor bubble to the mouth:
+  const mouthY = (() => {
+    const v = getComputedStyle(wrap).getPropertyValue('--mouth-y').trim();
+    const n = parseInt(v || '22', 10);
+    return Number.isFinite(n) ? n : 22;
+  })();
+
+  // Nudge values to align tail exactly on the mouth.
+  const POINTER_OFFSET = 12;     // how far down from bubble top the pointer sits
+  const TAIL_ADJUST    = 6;      // fine tune pointer triangle position
+
+  // Set the bubble's top so that the pointer lands at mouthY
+  bubble.style.top = `${Math.max(0, mouthY - POINTER_OFFSET)}px`;
+  bubble.style.setProperty('--tail-y', `${mouthY - TAIL_ADJUST}px`);
+}
+
+
   function showBubble(text) {
+    positionBubble();
     textEl.textContent = text;
-    placeBubble();
     bubble.classList.add('show');
     bubble.classList.remove('fadeout');
 
-    // Natural reading time (3–8s based on length)
     const msPerChar = 55;
-    const dur = Math.max(3000, Math.min(8000, text.length * msPerChar));
+    const dur = Math.max(2500, Math.min(8000, text.length * msPerChar));
     clearTimeout(timer);
     timer = setTimeout(() => {
       bubble.classList.add('fadeout');
@@ -127,27 +85,63 @@ if (!window.__pet_injected__) {
     }, dur);
   }
 
-  // --- Interaction: pet the dog for a pep ------------------------------------
-  avatar.addEventListener('click', () => {
+  // Drag whole widget
+  (function drag(handle, container) {
+    let down = false, sx=0, sy=0, sl=0, st=0;
+
+    const onDown = (e) => {
+      down = true; handle.style.cursor = 'grabbing';
+      const r = container.getBoundingClientRect();
+      sl = r.left; st = r.top; sx = e.clientX; sy = e.clientY;
+      container.style.position = 'fixed';
+      container.style.right = 'auto'; container.style.bottom = 'auto';
+      e.preventDefault();
+    };
+    const onMove = (e) => {
+      if (!down) return;
+      container.style.left = `${sl + (e.clientX - sx)}px`;
+      container.style.top  = `${st + (e.clientY - sy)}px`;
+      positionBubble();
+    };
+    const onUp = () => { down = false; handle.style.cursor = 'grab'; };
+
+    handle.addEventListener('mousedown', onDown);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('resize', positionBubble);
+  })(avatar, root);
+
+  const randomLine = () => {
     const pool = [...DEFAULTS, ...customLines];
-    const line = pool[Math.floor(Math.random() * pool.length)] || "One tiny step now.";
-    showBubble(line);
-  });
+    return pool[Math.floor(Math.random() * pool.length)] || "You’ve got this.";
+  };
 
-  // Keep placement correct on resize
-  window.addEventListener('resize', () => {
-    if (bubble.classList.contains('show')) placeBubble();
-  });
+  avatar.addEventListener('click', () => showBubble(randomLine()));
 
-  // Background nudges from service worker
+  // Messages
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type === 'NUDGE') {
-      const pool = [...DEFAULTS, ...customLines];
-      const text = msg.payload || pool[Math.floor(Math.random() * pool.length)];
-      showBubble(text);
+      showBubble(msg.payload || randomLine());
+    } else if (msg?.type === 'PET_SAY' && typeof msg.text === 'string') {
+      showBubble(msg.text);
     }
   });
 
-  // Friendly hello so you can confirm injection
-  setTimeout(() => showBubble("PET is ready 🐶 — click me for a pep!"), 600);
+  // Storage changes (custom lines + say-now fallback)
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'sync') return;
+    if (changes.petCustomLines) {
+      const next = changes.petCustomLines.newValue;
+      customLines = Array.isArray(next) ? next : [];
+    }
+    if (changes.petSpeakNow) {
+      const v = changes.petSpeakNow.newValue;
+      if (v && typeof v.text === 'string' && typeof v.at === 'number') {
+        if (Date.now() - v.at < 10_000) showBubble(v.text);
+      }
+    }
+  });
+
+  // Initial alignment
+  positionBubble();
 }
