@@ -14,11 +14,80 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name !== 'pet-nudge') return;
+  broadcastNudge();
+});
 
-  // You can optionally prefill a fallback message here
-  chrome.tabs.query({}, (tabs) => {
-    for (const t of tabs) {
-      if (t.id) chrome.tabs.sendMessage(t.id, { type: 'NUDGE' });
+function broadcastNudge(payload = null) {
+  chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }, (tabs) => {
+    for (const t of tabs) if (t.id) {
+      chrome.tabs.sendMessage(t.id, { type: 'NUDGE', payload });
     }
   });
+}
+
+function broadcastSay(text) {
+  if (!text) return;
+  // message
+  chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }, (tabs) => {
+    for (const t of tabs) if (t.id) {
+      chrome.tabs.sendMessage(t.id, { type: 'PET_SAY', text });
+    }
+  });
+  // storage fallback that content scripts also listen to
+  chrome.storage.sync.set({ petSpeakNow: { text, at: Date.now() } });
+}
+
+const ALLOWED_ORIGINS = new Set([
+   "https://latuang.github.io",
+  "http://localhost:3000"
+]);
+
+chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
+  try {
+    const origin = sender?.origin || (sender?.url ? new URL(sender.url).origin : "");
+    if (!ALLOWED_ORIGINS.has(origin)) {
+      sendResponse({ ok: false, error: "Origin not allowed", got: origin });
+      return;
+    }
+
+    if (msg?.type === "PET_SAY_NOW" && typeof msg.text === 'string' && msg.text.trim()) {
+      const text = msg.text.trim();
+      broadcastSay(text);
+      sendResponse({ ok: true, said: text });
+      return true;
+    }
+
+    if (msg?.type === "PET_ADD_LINES" && Array.isArray(msg.lines)) {
+      const cleaned = msg.lines.map(s => String(s).trim()).filter(Boolean);
+      chrome.storage.sync.get(['petCustomLines'], (cfg) => {
+        const current = Array.isArray(cfg.petCustomLines) ? cfg.petCustomLines : [];
+        const merged = Array.from(new Set([...current, ...cleaned]));
+        const last   = cleaned[cleaned.length - 1] || null;
+
+        chrome.storage.sync.set({ petCustomLines: merged }, () => {
+          if (last) broadcastSay(last); // speak immediately
+          sendResponse({ ok: true, count: merged.length, said: last || null });
+        });
+      });
+      return true;
+    }
+
+    if (msg?.type === "PET_GET_LINES") {
+      chrome.storage.sync.get(['petCustomLines'], (cfg) => {
+        sendResponse({ ok: true, lines: cfg.petCustomLines || [] });
+      });
+      return true;
+    }
+
+    if (msg?.type === "PET_CLEAR_LINES") {
+      chrome.storage.sync.set({ petCustomLines: [] }, () => {
+        sendResponse({ ok: true, count: 0 });
+      });
+      return true;
+    }
+
+    sendResponse({ ok: false, error: "Unknown message type" });
+  } catch (e) {
+    sendResponse({ ok: false, error: String(e?.message || e) });
+  }
 });
