@@ -8,7 +8,7 @@ if (!window.__pet_injected__) {
   root.innerHTML = `
     <div class="pet-wrap">
       <div class="pet-avatar" id="pet-avatar"
-           style="background-image:url(${chrome.runtime.getURL('assets/pet.png')});"
+           style="background-image:url(${chrome.runtime.getURL('pet.png')});"
            title="Drag or click me"></div>
       <div class="pet-bubble right" id="pet-bubble" role="status" aria-live="polite">
         <div id="pet-text">Hi! I’m PET. Need a nudge?</div>
@@ -21,13 +21,24 @@ if (!window.__pet_injected__) {
   const bubble = root.querySelector('#pet-bubble');
   const textEl = root.querySelector('#pet-text');
 
-  const getMouthY = () => {
-    const v = getComputedStyle(wrap).getPropertyValue('--mouth-y').trim();
-    const n = parseInt(v || '28', 10);
-    return Number.isFinite(n) ? n : 28;
-  };
+  function positionBubble() {
+    const rect = wrap.getBoundingClientRect();
+    const spaceRight = window.innerWidth - rect.right;
+    const spaceLeft  = rect.left;
+    const preferRight = spaceRight >= 220 || spaceRight > spaceLeft;
 
-  // Defaults + user lines
+    bubble.classList.toggle('right', preferRight);
+    bubble.classList.toggle('left', !preferRight);
+
+    const v = getComputedStyle(wrap).getPropertyValue('--mouth-y').trim();
+    const mouthY = Number.parseInt(v || '22', 10);
+    const POINTER_OFFSET = 12;
+    const TAIL_ADJUST = 6;
+
+    bubble.style.top = `${Math.max(0, mouthY - POINTER_OFFSET)}px`;
+    bubble.style.setProperty('--tail-y', `${mouthY - TAIL_ADJUST}px`);
+  }
+
   const DEFAULTS = [
     "Small steps still move you forward.",
     "Momentum beats motivation—start tiny.",
@@ -41,34 +52,6 @@ if (!window.__pet_injected__) {
   });
 
   let timer = null;
-
-  // Position bubble to mouth and choose side
-
-  function positionBubble() {
-  const rect = wrap.getBoundingClientRect();
-  const spaceRight = window.innerWidth - rect.right;
-  const spaceLeft  = rect.left;
-  const preferRight = spaceRight >= 220 || spaceRight > spaceLeft;
-
-  bubble.classList.toggle('right', preferRight);
-  bubble.classList.toggle('left', !preferRight);
-
-  // Anchor bubble to the mouth:
-  const mouthY = (() => {
-    const v = getComputedStyle(wrap).getPropertyValue('--mouth-y').trim();
-    const n = parseInt(v || '22', 10);
-    return Number.isFinite(n) ? n : 22;
-  })();
-
-  // Nudge values to align tail exactly on the mouth.
-  const POINTER_OFFSET = 12;     // how far down from bubble top the pointer sits
-  const TAIL_ADJUST    = 6;      // fine tune pointer triangle position
-
-  // Set the bubble's top so that the pointer lands at mouthY
-  bubble.style.top = `${Math.max(0, mouthY - POINTER_OFFSET)}px`;
-  bubble.style.setProperty('--tail-y', `${mouthY - TAIL_ADJUST}px`);
-}
-
 
   function showBubble(text) {
     positionBubble();
@@ -85,10 +68,8 @@ if (!window.__pet_injected__) {
     }, dur);
   }
 
-  // Drag whole widget
   (function drag(handle, container) {
     let down = false, sx=0, sy=0, sl=0, st=0;
-
     const onDown = (e) => {
       down = true; handle.style.cursor = 'grabbing';
       const r = container.getBoundingClientRect();
@@ -118,7 +99,6 @@ if (!window.__pet_injected__) {
 
   avatar.addEventListener('click', () => showBubble(randomLine()));
 
-  // Messages
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type === 'NUDGE') {
       showBubble(msg.payload || randomLine());
@@ -127,7 +107,6 @@ if (!window.__pet_injected__) {
     }
   });
 
-  // Storage changes (custom lines + say-now fallback)
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'sync') return;
     if (changes.petCustomLines) {
@@ -142,6 +121,5 @@ if (!window.__pet_injected__) {
     }
   });
 
-  // Initial alignment
   positionBubble();
 }
