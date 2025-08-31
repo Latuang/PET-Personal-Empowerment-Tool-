@@ -1,19 +1,28 @@
 const DEFAULT_PERIOD_MIN = 45;
+const ALARM_NAME = 'pet-nudge';
 
 function scheduleAlarm(period) {
-  chrome.alarms.clear('pet-nudge', () => {
-    chrome.alarms.create('pet-nudge', { periodInMinutes: period });
+  chrome.alarms.clear(ALARM_NAME, () => {
+    chrome.alarms.create(ALARM_NAME, { periodInMinutes: period });
   });
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.sync.get(['petPeriodMinutes'], (cfg) => {
-    scheduleAlarm(cfg.petPeriodMinutes || DEFAULT_PERIOD_MIN);
+  chrome.storage.sync.get(['periodMinutes'], (cfg) => {
+    scheduleAlarm(cfg.periodMinutes || DEFAULT_PERIOD_MIN);
   });
 });
 
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg?.type === 'RESCHEDULE') {
+    chrome.storage.sync.get(['periodMinutes'], (cfg) => {
+      scheduleAlarm(cfg.periodMinutes || DEFAULT_PERIOD_MIN);
+    });
+  }
+});
+
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name !== 'pet-nudge') return;
+  if (alarm.name !== ALARM_NAME) return;
   broadcastNudge();
 });
 
@@ -27,18 +36,16 @@ function broadcastNudge(payload = null) {
 
 function broadcastSay(text) {
   if (!text) return;
-  // message
   chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }, (tabs) => {
     for (const t of tabs) if (t.id) {
       chrome.tabs.sendMessage(t.id, { type: 'PET_SAY', text });
     }
   });
-  // storage fallback that content scripts also listen to
   chrome.storage.sync.set({ petSpeakNow: { text, at: Date.now() } });
 }
 
 const ALLOWED_ORIGINS = new Set([
-   "https://latuang.github.io",
+  "https://latuang.github.io",
   "http://localhost:3000"
 ]);
 
@@ -65,7 +72,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
         const last   = cleaned[cleaned.length - 1] || null;
 
         chrome.storage.sync.set({ petCustomLines: merged }, () => {
-          if (last) broadcastSay(last); // speak immediately
+          if (last) broadcastSay(last);
           sendResponse({ ok: true, count: merged.length, said: last || null });
         });
       });
