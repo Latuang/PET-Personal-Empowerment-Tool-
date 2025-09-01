@@ -1,3 +1,6 @@
+// Do not run inside iframes/ads
+if (window.top !== window) { return; }
+
 if (!window.__pet_injected__) {
   window.__pet_injected__ = true;
 
