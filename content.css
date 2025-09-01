@@ -62,3 +62,4 @@
 }
 .pet-bubble.left::before  { border-left:10px solid #fff; }
 .pet-bubble.left::after   { right:-11px; border-left:11px solid rgba(0,0,0,.14); filter: blur(.2px); }
+
