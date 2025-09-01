@@ -36,13 +36,15 @@ function broadcastNudge(payload = null) {
 
 function broadcastSay(text) {
   if (!text) return;
-  chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }, (tabs) => {
-    for (const t of tabs) if (t.id) {
-      chrome.tabs.sendMessage(t.id, { type: 'PET_SAY', text });
-    }
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const t = tabs[0];
+    if (t?.id) chrome.tabs.sendMessage(t.id, { type: 'PET_SAY', text });
   });
   chrome.storage.sync.set({ petSpeakNow: { text, at: Date.now() } });
 }
+
+
+
 
 const ALLOWED_ORIGINS = new Set([
   "https://latuang.github.io",
