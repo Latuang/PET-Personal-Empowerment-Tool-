@@ -1,23 +1,19 @@
-/* Make sure PET stays interactive & above page overlays */
-#pet-root { z-index: 2147483647; }
+/* Keep PET above everything and clickable */
+#pet-root { position: fixed; bottom: 16px; right: 16px; z-index: 2147483647; }
 #pet-root, #pet-root * { pointer-events: auto; }
+#pet-root { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
 
-#pet-root {
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
-  z-index: 2147483647;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-}
+/* Bubble should not eat clicks; clicks go to the avatar */
+#pet-root .pet-bubble { pointer-events: none; }
 
-/* 👇 Tweak --mouth-y until the pointer hits the mouth perfectly. */
+/* 🐶 widget layout */
 .pet-wrap {
   position: relative;
   display: block;
   user-select: none;
   --avatar: 72px;
   --gap: 10px;
-  --mouth-y: 22px;   /* ← try 20–28 depending on your PNG */
+  --mouth-y: 22px;   /* adjust if the tail pointer misses the mouth */
 }
 
 .pet-avatar {
@@ -30,9 +26,9 @@
 }
 @keyframes petFloat { 0%{transform:translateY(0)} 50%{transform:translateY(-6px)} 100%{transform:translateY(0)} }
 
+/* Speech bubble */
 .pet-bubble {
   position: absolute;
-  /* top is set by JS each time based on --mouth-y */
   max-width: min(32ch, calc(100vw - 160px));
   min-width: 16ch;
   background: #fff; color:#000;
@@ -45,7 +41,6 @@
   text-wrap: pretty; overflow-wrap: break-word; hyphens: auto;
   opacity: 0; transform: translateY(4px) scale(.98);
   transition: opacity .22s, transform .22s;
-  pointer-events: none;
 }
 .pet-bubble.show   { opacity: 1; transform: translateY(0) scale(1); }
 .pet-bubble.fadeout{ opacity: 0; transform: translateY(4px) scale(.98); }
