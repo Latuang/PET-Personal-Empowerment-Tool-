@@ -1,137 +1,328 @@
 <!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>PET Control Panel</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <style>
-      body { font: 16px system-ui; margin: 0; background: #f7f7f8; color: #111; }
-      .wrap { max-width: 720px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
-      h1 { margin: 0 0 8px; font-size: 24px; }
-      p  { margin: 0 0 16px; color: #444; }
-      textarea { width: 100%; min-height: 180px; font: 15px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace; }
-      .row { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
-      button { padding: 10px 14px; border-radius: 10px; border: 1px solid #ddd; background: #111; color: #fff; cursor: pointer; transition: transform .08s ease, opacity .2s ease; }
-      button:active { transform: scale(1.03); }
-      button.is-sending { transform: scale(1.08); }
-      button.secondary { background: #fff; color: #111; }
-      .hint { font-size: 13px; color: #666; margin-top: 8px; }
-      .ok { color: #0a7f2e; }
-      .err { color: #b00020; }
-    </style>
-  </head>
-  <body>
-    <div class="wrap">
-      <h1>PET Control Panel</h1>
-      <p>Add custom pep lines for your PET. One line per row.</p>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>PET Control Panel</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-      <textarea id="lines" placeholder="E.g.&#10;Press start—two minutes only.&#10;Drink water. Breathe. Send that message."></textarea>
+  <style>
+    :root{
+      --ink:#2b2118;
+      --paper:#ffffffee;
+      --bg-a:#fff4ea;     /* warm peach */
+      --bg-b:#fde9f2;     /* rosy milk */
+      --bg-c:#e9fbf1;     /* mint foam */
+      --peach:#ff8c7a;    /* Save */
+      --teal:#3f8e7b;     /* Load */
+      --ring: 0 0 0 3px color-mix(in oklab, #ff8c7a, white 70%);
+      --shadow: 0 18px 50px rgba(60,38,21,.15), 0 4px 16px rgba(60,38,21,.08);
+      --radius: 22px;
+    }
 
-      <div class="row">
-        <button id="save">Save to PET</button>
-        <button class="secondary" id="load">Load from PET</button>
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--ink);
+      font:16px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:
+        linear-gradient(180deg, var(--bg-a), var(--bg-b) 40%, var(--bg-c) 100%);
+      overflow-x:hidden;
+    }
+
+    /* ===== animated background layers ===== */
+    canvas#bg{ position:fixed; inset:0; z-index:0; pointer-events:none; }
+    .fireflies{
+      position:fixed; inset:0; z-index:0; pointer-events:none;
+      background:
+        radial-gradient(6px 6px at 12% 70%, rgba(255,255,255,.6), transparent 60%),
+        radial-gradient(5px 5px at 60% 20%, rgba(255,255,255,.5), transparent 60%),
+        radial-gradient(4px 4px at 80% 80%, rgba(255,255,255,.45), transparent 60%),
+        radial-gradient(6px 6px at 30% 35%, rgba(255,255,255,.55), transparent 60%);
+      animation: twinkle 6s ease-in-out infinite alternate;
+      mix-blend-mode: screen;
+      opacity:.55;
+    }
+    @keyframes twinkle{
+      0%{ filter: blur(0.5px) brightness(1) }
+      100%{ filter: blur(1.5px) brightness(1.4) }
+    }
+
+    /* ===== card ===== */
+    .wrap{
+      position:relative; z-index:1;
+      max-width: 860px;
+      margin: clamp(18px, 6vh, 56px) auto;
+      padding: clamp(18px, 3.8vw, 28px);
+      border-radius: var(--radius);
+      background: var(--paper);
+      backdrop-filter: blur(6px);
+      box-shadow: var(--shadow);
+    }
+
+    .header{ display:flex; align-items:center; gap:14px; margin:0 0 8px; }
+    h1{ margin:0; font-size: clamp(22px, 2.6vw, 32px); letter-spacing:.2px; }
+    .sub{ color:#6b5c52; margin:0 0 14px; }
+
+    /* center & align textarea perfectly */
+    .field{
+      margin-top: 12px;
+      border-radius: 16px;
+      border:1px solid #e8d9cc;
+      background:#fffdfb;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+      overflow:hidden;
+    }
+    textarea{
+      display:block;
+      width:100%;
+      min-height: 240px;
+      padding:14px 14px 16px;
+      border:0; outline:0;
+      box-sizing:border-box;   /* ← prevents overlap/overflow */
+      font: 15px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+      background:transparent; color:var(--ink);
+    }
+    textarea:focus-within{ outline: none; }
+
+    .row{ display:flex; flex-wrap:wrap; gap:12px; margin-top:14px; }
+
+    .btn{
+      --bg:#2b2118;
+      --txt:#fff;
+      appearance:none; border:0; cursor:pointer;
+      padding:12px 16px; border-radius:14px;
+      color:var(--txt); font-weight:650; letter-spacing:.15px;
+      background: radial-gradient(120% 140% at 10% 10%, color-mix(in oklab, var(--bg), black 7%) 0 25%, var(--bg) 26% 100%);
+      position:relative; transform: translateZ(0);
+      transition: transform .06s ease, filter .25s ease, box-shadow .25s ease;
+      box-shadow: 0 6px 18px rgba(43,33,24,.18), inset 0 1px 0 rgba(255,255,255,.2);
+      overflow:hidden;
+    }
+    .btn:hover{
+      filter: brightness(1.06);
+      box-shadow: 0 10px 28px rgba(43,33,24,.25), 0 0 24px 6px color-mix(in oklab, var(--bg), white 75%);
+    }
+    .btn:active{ transform: translateY(1px) scale(.99); }
+
+    /* themed buttons */
+    .btn.peach{ --bg: var(--peach); }
+    .btn.teal { --bg: var(--teal); }
+
+    .btn.is-sending{ animation: throb .9s ease-in-out infinite; }
+    @keyframes throb { 50% { transform: translateY(0) scale(1.03) } }
+
+    /* click ripple */
+    .btn .r{ position:absolute; width:8px;height:8px;border-radius:999px;
+      background:#fff8; transform: translate(-50%,-50%) scale(0);
+      animation: ripple .6s ease-out; pointer-events:none; }
+    @keyframes ripple{ to { transform: translate(-50%,-50%) scale(22); opacity:0 } }
+
+    .hint{ font-size:13px; color:#6b5c52; margin-top:8px;}
+    .ok { color:#0f7d4c; }
+    .err{ color:#b00020; }
+
+    .badges{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; align-items:center; }
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; background:#fff8f1; border:1px solid #f2decf;
+      color:#5c4a3c; border-radius: 999px; font-size:12px;
+    }
+    .dot{ width:10px;height:10px;border-radius:50%; background:#ffb39f; box-shadow:0 0 10px #ffb39f; }
+    .dot.mint{ background:#a8e4d2; box-shadow:0 0 10px #a8e4d2; }
+
+    /* responsive niceties */
+    @media (max-width:560px){ .wrap{ margin:18px 12px } }
+  </style>
+</head>
+<body>
+  <!-- animated layers -->
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <div class="fireflies" aria-hidden="true"></div>
+
+  <main class="wrap" role="main">
+    <div class="header">
+      <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 7h12M6 12h9M6 17h6" stroke="#2b2118" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>Welcome to PET Control Panel</h1>
+        <p class="sub">PET aka Personal Empowerment Tool is here accompany and motivate you throughout the tabs</p>
+        <p class="sub">Instruction: Add pep lines below for your PET. One line per row.</p>
+
       </div>
-
-      <div id="status" class="hint"></div>
-      <div class="hint">Works only in Google Chrome with the PET extension installed, and this site whitelisted in the manifest.</div>
     </div>
 
-    <script>
-      const EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd";
+    <div class="field">
+      <textarea id="lines" placeholder="E.g.
+Drink water. Breathe. Send that message.
+Tiny step now, future you says thanks."></textarea>
+    </div>
 
-      const statusEl = document.getElementById('status');
-      const linesEl  = document.getElementById('lines');
-      const saveBtn  = document.getElementById('save');
-      const loadBtn  = document.getElementById('load');
+    <div class="row">
+      <button id="save" class="btn peach">Save to PET ✨</button>
+      <button id="load" class="btn teal">Load from PET 🍃</button>
+    </div>
 
-      const canUseAPI = () =>
-        typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.sendMessage === "function";
+    <div id="status" class="hint" role="status" aria-live="polite"></div>
 
-      const getLines = () =>
-        linesEl.value.split('\n').map(s => s.trim()).filter(Boolean);
+    <div class="badges">
+      <span class="chip"><span class="dot"></span> Works in Google Chrome (desktop)</span>
+      <span class="chip"><span class="dot mint"></span> Requires PET extension installed</span>
+    </div>
+  </main>
 
-      function sendToPET(payload, cb) {
-        if (!canUseAPI()) {
-          statusEl.textContent = "Open this page in Google Chrome with the PET extension installed.";
-          statusEl.className = "hint err";
+  <script>
+    /*** Animated background (soft drifting blobs) ***/
+    const c = document.getElementById('bg');
+    const ctx = c.getContext('2d');
+    let W, H, blobs;
+
+    function reset(){
+      W = c.width  = innerWidth * devicePixelRatio;
+      H = c.height = innerHeight* devicePixelRatio;
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      blobs = Array.from({length: 12}, (_,i)=>({
+        x: Math.random()*innerWidth,
+        y: Math.random()*innerHeight,
+        r: 80 + Math.random()*180,
+        hue: [22,340,160][i%3],     // peach / rose / mint
+        alpha: .26 + Math.random()*.18,
+        vx: (Math.random()-.5)*0.3,
+        vy: (Math.random()-.5)*0.3
+      }));
+    }
+    reset();
+    addEventListener('resize', reset);
+
+    let mouse = {x: innerWidth/2, y: innerHeight/2};
+    addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+    function tick(){
+      ctx.clearRect(0,0,innerWidth,innerHeight);
+      blobs.forEach(b=>{
+        b.x += b.vx; b.y += b.vy;
+        // gentle wrap
+        if (b.x<-b.r) b.x=innerWidth+b.r;
+        if (b.x>innerWidth+b.r) b.x=-b.r;
+        if (b.y<-b.r) b.y=innerHeight+b.r;
+        if (b.y>innerHeight+b.r) b.y=-b.r;
+
+        // tiny parallax towards mouse
+        const dx=(mouse.x-b.x)*0.003, dy=(mouse.y-b.y)*0.003;
+        b.x += dx; b.y += dy;
+
+        const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+        g.addColorStop(0, `hsla(${b.hue} 92% 75% / ${b.alpha})`);
+        g.addColorStop(1, `hsla(${b.hue} 92% 75% / 0)`);
+        ctx.fillStyle=g; ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+      });
+      requestAnimationFrame(tick);
+    }
+    tick();
+
+    /*** PET wiring (unchanged behavior) ***/
+    const EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd"; // set to your real ID
+    const statusEl = document.getElementById('status');
+    const linesEl  = document.getElementById('lines');
+    const saveBtn  = document.getElementById('save');
+    const loadBtn  = document.getElementById('load');
+
+    const canUseAPI = () =>
+      typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.sendMessage === "function";
+
+    const say = (txt, ok=true)=>{
+      statusEl.textContent = txt;
+      statusEl.className = "hint " + (ok? "ok":"err");
+    };
+
+    const getLines = () =>
+      linesEl.value.split('\n').map(s => s.trim()).filter(Boolean);
+
+    function sendToPET(payload, cb) {
+      if (!canUseAPI()) {
+        say("Chrome API not available. Use Google Chrome on desktop.", false);
+        cb?.(null); return;
+      }
+      chrome.runtime.sendMessage(EXT_ID, payload, (resp) => {
+        if (chrome.runtime.lastError) {
+          say("Could not reach PET: " + chrome.runtime.lastError.message, false);
           cb?.(null); return;
         }
-        chrome.runtime.sendMessage(EXT_ID, payload, (resp) => {
-          if (chrome.runtime.lastError) {
-            statusEl.textContent = "Could not reach PET: " + chrome.runtime.lastError.message;
-            statusEl.className = "hint err";
-            cb?.(null); return;
-          }
-          cb?.(resp);
+        cb?.(resp);
+      });
+    }
+
+    // button ripple helper
+    function ripple(e){
+      const r=document.createElement('span');
+      r.className='r'; e.currentTarget.appendChild(r);
+      r.style.left = e.offsetX+'px'; r.style.top = e.offsetY+'px';
+      r.addEventListener('animationend', ()=>r.remove());
+    }
+    [saveBtn, loadBtn].forEach(b=>b.addEventListener('click', ripple));
+
+    // 🎉 confetti on success
+    function confetti(){
+      const N=36;
+      for(let i=0;i<N;i++){
+        const s=document.createElement('div');
+        const size = 6+Math.random()*8;
+        s.textContent = ['✨','🐶','🌟','💖','🍀'][i%5];
+        s.style.position='fixed'; s.style.zIndex=9999;
+        s.style.left=(Math.random()*100)+'vw'; s.style.top='-10vh';
+        s.style.fontSize=size+'px'; s.style.transition='transform 1.2s ease-out, opacity 1.2s ease-out';
+        document.body.appendChild(s);
+        requestAnimationFrame(()=>{
+          s.style.transform=`translateY(${110+Math.random()*20}vh) rotate(${(Math.random()-.5)*360}deg)`;
+          s.style.opacity='0';
         });
+        setTimeout(()=>s.remove(),1300);
       }
+    }
 
-      saveBtn.addEventListener('click', () => {
-        const lines = getLines();
-        if (!lines.length) {
-          statusEl.textContent = "Add at least one line.";
-          statusEl.className = "hint err";
-          return;
+    saveBtn.addEventListener('click', () => {
+      const lines = getLines();
+      if (!lines.length) { say("Add at least one line.", false); return; }
+
+      const sayNow = lines[lines.length - 1];
+      saveBtn.classList.add('is-sending'); saveBtn.disabled = true;
+
+      sendToPET({ type: "PET_ADD_LINES", lines }, (resp) => {
+        saveBtn.classList.remove('is-sending'); saveBtn.disabled = false;
+        if (!(resp && resp.ok)) { say("PET error: " + (resp?.error || "Unknown"), false); return; }
+
+        sendToPET({ type: "PET_SAY_NOW", text: sayNow }, (resp2) => {
+          if (resp2?.ok) { say(`Saved & said: “${sayNow}”`); confetti(); }
+          else { say("Saved, but could not trigger speech.", false); }
+        });
+      });
+    });
+
+    loadBtn.addEventListener('click', () => {
+      loadBtn.classList.add('is-sending'); loadBtn.disabled = true;
+      sendToPET({ type: "PET_GET_LINES" }, (resp) => {
+        loadBtn.classList.remove('is-sending'); loadBtn.disabled = false;
+        if (resp?.ok) {
+          linesEl.value = (resp.lines || []).join('\n');
+          say(`Loaded ${resp.lines?.length || 0} lines from PET.`);
+        } else {
+          say("PET error: " + (resp?.error || "Unknown"), false);
         }
-
-        const sayNow = lines[lines.length - 1]; // last non-empty line
-        saveBtn.classList.add('is-sending');
-        saveBtn.disabled = true;
-
-        // 1) Save lines
-        sendToPET({ type: "PET_ADD_LINES", lines }, (resp) => {
-          saveBtn.classList.remove('is-sending');
-          saveBtn.disabled = false;
-
-          if (!(resp && resp.ok)) {
-            statusEl.textContent = "PET error: " + (resp?.error || "Unknown");
-            statusEl.className = "hint err";
-            return;
-          }
-
-          // 2) Explicitly tell PET to say the last line now (broadcast)
-          sendToPET({ type: "PET_SAY_NOW", text: sayNow }, (resp2) => {
-            if (resp2?.ok) {
-              statusEl.textContent = `Saved & said: “${sayNow}”`;
-              statusEl.className = "hint ok";
-            } else {
-              statusEl.textContent = "Saved, but could not trigger speech.";
-              statusEl.className = "hint err";
-            }
-          });
-        });
       });
+    });
 
-      loadBtn.addEventListener('click', () => {
-        sendToPET({ type: "PET_GET_LINES" }, (resp) => {
-          if (resp?.ok) {
-            linesEl.value = (resp.lines || []).join('\n');
-            statusEl.textContent = `Loaded ${resp.lines?.length || 0} lines from PET.`;
-            statusEl.className = "hint ok";
-          } else {
-            statusEl.textContent = "PET error: " + (resp?.error || "Unknown");
-            statusEl.className = "hint err";
-          }
-        });
-      });
-
-      window.addEventListener('DOMContentLoaded', () => {
-        if (!canUseAPI()) {
-          statusEl.textContent = "Chrome API not available. Use Google Chrome on desktop.";
-          statusEl.className = "hint err";
-          return;
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!canUseAPI()) { say("Chrome API not available. Use Google Chrome on desktop.", false); return; }
+      sendToPET({ type: "PET_GET_LINES" }, (resp) => {
+        if (resp?.ok) {
+          linesEl.value = (resp.lines || []).join('\n');
+          say(`Connected to PET. ${resp.lines?.length || 0} custom lines loaded.`);
+        } else {
+          say("Could not connect to PET. Check manifest origins and reload the extension.", false);
         }
-        sendToPET({ type: "PET_GET_LINES" }, (resp) => {
-          if (resp?.ok) {
-            linesEl.value = (resp.lines || []).join('\n');
-            statusEl.textContent = `Connected to PET. ${resp.lines?.length || 0} custom lines loaded.`;
-            statusEl.className = "hint ok";
-          } else {
-            statusEl.textContent = "Could not connect to PET. Check manifest origins and reload the extension.";
-            statusEl.className = "hint err";
-          }
-        });
       });
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>
+
