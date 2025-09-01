@@ -1,11 +1,14 @@
-// Do not run inside iframes/ads
+// Top-frame only; never inject in iframes/ads
 if (window.top !== window) { return; }
 
-if (!window.__pet_injected__) {
-  window.__pet_injected__ = true;
+(function install() {
+  // Prevent duplicate injection
+  if (document.documentElement.dataset.petInstalled === "1") return;
+  document.documentElement.dataset.petInstalled = "1";
 
-  const root = document.createElement('div');
-  root.id = 'pet-root';
+  // Create root
+  const root = document.createElement("div");
+  root.id = "pet-root";
   document.documentElement.appendChild(root);
 
   root.innerHTML = `
@@ -24,6 +27,7 @@ if (!window.__pet_injected__) {
   const bubble = root.querySelector('#pet-bubble');
   const textEl = root.querySelector('#pet-text');
 
+  // --- Bubble placement ---
   function positionBubble() {
     const rect = wrap.getBoundingClientRect();
     const spaceRight = window.innerWidth - rect.right;
@@ -42,6 +46,7 @@ if (!window.__pet_injected__) {
     bubble.style.setProperty('--tail-y', `${mouthY - TAIL_ADJUST}px`);
   }
 
+  // --- Lines store ---
   const DEFAULTS = [
     "Small steps still move you forward.",
     "Momentum beats motivation—start tiny.",
@@ -54,8 +59,8 @@ if (!window.__pet_injected__) {
     if (Array.isArray(cfg.petCustomLines)) customLines = cfg.petCustomLines;
   });
 
-  let timer = null;
-
+  // --- Bubble show/hide ---
+  let hideTimer = null;
   function showBubble(text) {
     positionBubble();
     textEl.textContent = text;
@@ -64,44 +69,73 @@ if (!window.__pet_injected__) {
 
     const msPerChar = 55;
     const dur = Math.max(2500, Math.min(8000, text.length * msPerChar));
-    clearTimeout(timer);
-    timer = setTimeout(() => {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
       bubble.classList.add('fadeout');
       setTimeout(() => bubble.classList.remove('show'), 220);
     }, dur);
   }
-
-  (function drag(handle, container) {
-    let down = false, sx=0, sy=0, sl=0, st=0;
-    const onDown = (e) => {
-      down = true; handle.style.cursor = 'grabbing';
-      const r = container.getBoundingClientRect();
-      sl = r.left; st = r.top; sx = e.clientX; sy = e.clientY;
-      container.style.position = 'fixed';
-      container.style.right = 'auto'; container.style.bottom = 'auto';
-      e.preventDefault();
-    };
-    const onMove = (e) => {
-      if (!down) return;
-      container.style.left = `${sl + (e.clientX - sx)}px`;
-      container.style.top  = `${st + (e.clientY - sy)}px`;
-      positionBubble();
-    };
-    const onUp = () => { down = false; handle.style.cursor = 'grab'; };
-
-    handle.addEventListener('mousedown', onDown);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    window.addEventListener('resize', positionBubble);
-  })(avatar, root);
-
   const randomLine = () => {
     const pool = [...DEFAULTS, ...customLines];
     return pool[Math.floor(Math.random() * pool.length)] || "You’ve got this.";
   };
 
-  avatar.addEventListener('click', () => showBubble(randomLine()));
+  // --- Click vs Drag (with threshold) ---
+  (function enableDrag(handle, container) {
+    const DRAG_THRESHOLD = 4; // px
+    let dragging = false, down = false;
+    let sx=0, sy=0, sl=0, st=0;
 
+    const onDown = (e) => {
+      down = true; dragging = false;
+      handle.style.cursor = 'grabbing';
+      const r = container.getBoundingClientRect();
+      sl = r.left; st = r.top; sx = e.clientX; sy = e.clientY;
+      // Defer switching to left/top until we've exceeded threshold
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const onMove = (e) => {
+      if (!down) return;
+      const dx = e.clientX - sx;
+      const dy = e.clientY - sy;
+      if (!dragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+        // Enter drag mode: switch anchoring once
+        dragging = true;
+        container.style.position = 'fixed';
+        container.style.right = 'auto';
+        container.style.bottom = 'auto';
+      }
+      if (dragging) {
+        container.style.left = `${sl + dx}px`;
+        container.style.top  = `${st + dy}px`;
+        positionBubble();
+      }
+    };
+
+    const onUp = (e) => {
+      if (!down) return;
+      down = false; handle.style.cursor = 'grab';
+      // Treat quick press-release as a click (no dragging)
+      if (!dragging) {
+        e.preventDefault(); e.stopPropagation();
+        showBubble(randomLine());
+      }
+    };
+
+    handle.addEventListener('mousedown', onDown, { passive:false });
+    window.addEventListener('mousemove', onMove, { passive:true });
+    window.addEventListener('mouseup', onUp, { passive:true });
+
+    // Also respond to keyboard users
+    handle.addEventListener('click', (e) => {
+      // click can still fire after a small drag on some platforms—gate it
+      if (!dragging) { e.stopPropagation(); showBubble(randomLine()); }
+    });
+  })(avatar, root);
+
+  // Messages from background / control panel
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type === 'NUDGE') {
       showBubble(msg.payload || randomLine());
@@ -110,6 +144,7 @@ if (!window.__pet_injected__) {
     }
   });
 
+  // Sync changes & say-now fallback
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'sync') return;
     if (changes.petCustomLines) {
@@ -124,5 +159,14 @@ if (!window.__pet_injected__) {
     }
   });
 
+  // Keep it alive if a site re-writes the DOM
+  const mo = new MutationObserver(() => {
+    if (!document.getElementById('pet-root')) {
+      document.documentElement.appendChild(root);
+    }
+  });
+  mo.observe(document.documentElement, { childList: true });
+
+  // Initial alignment
   positionBubble();
-}
+})();
