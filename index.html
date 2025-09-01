@@ -8,25 +8,38 @@
     :root{
       --ink:#2b2118;
       --paper:#ffffffee;
-      --bg-a:#fff4ea; --bg-b:#fde9f2; --bg-c:#e9fbf1;
-      --peach:#ff8c7a; --teal:#3f8e7b;
-      --shadow: 0 18px 50px rgba(60,38,21,.15), 0 4px 16px rgba(60,38,21,.08);
+      --bg-a:#fff4ea;     /* warm peach */
+      --bg-b:#fde9f2;     /* rosy milk */
+      --bg-c:#e9fbf1;     /* mint foam */
+      --peach:#ff8c7a;    /* Save */
+      --teal:#3f8e7b;     /* Load */
       --radius:22px;
-      --muted:#6b5c52;
+      --shadow:0 18px 50px rgba(60,38,21,.15), 0 4px 16px rgba(60,38,21,.08);
     }
+
     html,body{height:100%}
     body{
       margin:0; color:var(--ink);
-      font:16px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      font:16px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       background: linear-gradient(180deg, var(--bg-a), var(--bg-b) 40%, var(--bg-c) 100%);
       overflow-x:hidden;
     }
-    /* subtle drifting blobs */
-    canvas#bg{ position:fixed; inset:0; z-index:0; pointer-events:none; }
+
+    /* subtle animated background dots */
+    .fireflies{position:fixed; inset:0; pointer-events:none; z-index:0;
+      background:
+        radial-gradient(6px 6px at 12% 70%, rgba(255,255,255,.55), transparent 60%),
+        radial-gradient(5px 5px at 60% 20%, rgba(255,255,255,.5), transparent 60%),
+        radial-gradient(4px 4px at 80% 80%, rgba(255,255,255,.45), transparent 60%),
+        radial-gradient(6px 6px at 30% 35%, rgba(255,255,255,.55), transparent 60%);
+      animation: twinkle 6s ease-in-out infinite alternate;
+      mix-blend-mode: screen; opacity:.55;
+    }
+    @keyframes twinkle{0%{filter:blur(.6px)}100%{filter:blur(1.3px) brightness(1.15)}}
 
     .wrap{
       position:relative; z-index:1;
-      max-width: 900px;
+      max-width: 860px;
       margin: clamp(18px, 6vh, 56px) auto;
       padding: clamp(18px, 3.8vw, 28px);
       border-radius: var(--radius);
@@ -34,10 +47,12 @@
       backdrop-filter: blur(6px);
       box-shadow: var(--shadow);
     }
-    .header{ display:flex; align-items:center; gap:14px; margin-bottom:8px; }
-    h1{ margin:0; font-size: clamp(22px, 2.6vw, 32px); letter-spacing:.2px; }
-    .sub{ color:var(--muted); margin:0 0 14px; }
 
+    .header{ display:flex; align-items:center; gap:14px; margin:0 0 8px; }
+    h1{ margin:0; font-size: clamp(22px, 2.6vw, 32px); letter-spacing:.2px; }
+    .sub{ color:#6b5c52; margin:.25rem 0; }
+
+    /* perfectly aligned editor */
     .field{
       margin-top: 12px;
       border-radius: 16px;
@@ -47,87 +62,76 @@
       overflow:hidden;
     }
     textarea{
-      display:block; width:100%; min-height: 240px;
+      display:block; width:100%; min-height:240px;
       padding:14px 14px 16px; border:0; outline:0; box-sizing:border-box;
-      font: 15px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+      font: 15px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace;
       background:transparent; color:var(--ink);
     }
+
     .row{ display:flex; flex-wrap:wrap; gap:12px; margin-top:14px; }
     .btn{
       --bg:#2b2118; --txt:#fff;
       appearance:none; border:0; cursor:pointer;
-      padding:12px 16px; border-radius:14px; color:var(--txt); font-weight:650; letter-spacing:.15px;
+      padding:12px 16px; border-radius:14px;
+      color:var(--txt); font-weight:650; letter-spacing:.15px;
       background: radial-gradient(120% 140% at 10% 10%, color-mix(in oklab, var(--bg), black 7%) 0 25%, var(--bg) 26% 100%);
-      position:relative; transform: translateZ(0);
       transition: transform .06s ease, filter .25s ease, box-shadow .25s ease;
       box-shadow: 0 6px 18px rgba(43,33,24,.18), inset 0 1px 0 rgba(255,255,255,.2);
-      overflow:hidden;
+      position:relative; overflow:hidden;
     }
-    .btn:hover{ filter: brightness(1.06); box-shadow: 0 10px 28px rgba(43,33,24,.25), 0 0 24px 6px color-mix(in oklab, var(--bg), white 75%); }
+    .btn:hover{ filter:brightness(1.06); box-shadow:0 10px 28px rgba(43,33,24,.25), 0 0 24px 6px color-mix(in oklab, var(--bg), white 75%); }
     .btn:active{ transform: translateY(1px) scale(.99); }
     .btn.peach{ --bg: var(--peach); }
     .btn.teal { --bg: var(--teal); }
-    .btn.is-sending{ animation: throb .9s ease-in-out infinite; }
-    @keyframes throb { 50% { transform: translateY(0) scale(1.03) } }
-    .btn .r{ position:absolute; width:8px;height:8px;border-radius:999px; background:#fff8; transform: translate(-50%,-50%) scale(0); animation: ripple .6s ease-out; pointer-events:none; }
-    @keyframes ripple{ to { transform: translate(-50%,-50%) scale(22); opacity:0 } }
+    .btn .r{ position:absolute; width:8px;height:8px;border-radius:999px; background:#fff8;
+      transform: translate(-50%,-50%) scale(0); animation:ripple .6s ease-out; pointer-events:none;}
+    @keyframes ripple{to{transform:translate(-50%,-50%) scale(22); opacity:0}}
 
-    .hint{ font-size:13px; color:var(--muted); margin-top:8px;}
+    .hint{ font-size:13px; color:#6b5c52; margin-top:8px;}
     .ok { color:#0f7d4c; }
     .err{ color:#b00020; }
 
-    .badges{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; align-items:center; }
-    .chip{ display:inline-flex; align-items:center; gap:8px; padding:8px 10px; background:#fff8f1; border:1px solid #f2decf; color:#5c4a3c; border-radius: 999px; font-size:12px; }
-    .dot{ width:10px;height:10px;border-radius:50%; background:#ffb39f; box-shadow:0 0 10px #ffb39f; }
-    .dot.mint{ background:#a8e4d2; box-shadow:0 0 10px #a8e4d2; }
-
     /* Timer card */
     .timer-card{
-      margin-top:16px; padding:16px; border:1px solid #eedfd3; border-radius:16px; background:#fffefa;
+      margin-top:18px; padding:18px; border-radius:16px;
+      background:#fffaf6; border:1px solid #f2decf;
     }
-    .timer-head{ display:flex; align-items:center; gap:8px; font-weight:700; color:#374151; }
-    .timer-grid{ margin-top:12px; display:grid; grid-template-columns: 140px 1fr; gap:16px; align-items:center; }
-    .dial{
-      width:120px;height:120px;border-radius:50%;
-      display:grid; place-items:center; background:#f4f1ed; color:#0f5132;
-      border:1px solid #e6dbcf; box-shadow: inset 0 1px 0 #fff, 0 8px 20px rgba(0,0,0,.05);
-      font-weight:800; font-size:20px;
+    .timer-head{ display:flex; align-items:center; gap:8px; margin-bottom:10px; font-weight:700;}
+    .clock{
+      width:110px; height:110px; border-radius:50%;
+      background:linear-gradient(#fff,#fff8); border:1px solid #efd7c7;
+      display:grid; place-items:center; font-weight:800; color:#2b2118;
+      box-shadow: inset 0 8px 24px rgba(0,0,0,.03);
     }
-    .inputs{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .inputs label{ font-size:12px; color:#555; display:flex; flex-direction:column; gap:6px; }
-    .inputs input{
-      width:86px; padding:10px 12px; border-radius:12px; border:1px solid #e4d7c9; background:#fff; font-weight:700; text-align:center;
-      box-shadow: 0 2px 0 #fff inset;
+    .time-inputs{ display:flex; gap:10px; align-items:end; flex-wrap:wrap; }
+    .time-inputs label{ display:grid; gap:6px; font-size:12px; color:#6b5c52; }
+    .time-inputs input{
+      width:90px; padding:10px 12px; border-radius:12px; border:1px solid #ecd6c7; background:#fff;
+      font-weight:700; text-align:center;
     }
-    .controls{ display:flex; gap:10px; flex-wrap:wrap; }
-    .pill{ padding:10px 12px; border-radius:12px; background:#fff; border:1px solid #e4d7c9; cursor:pointer; }
-    .pill:active{ transform: translateY(1px); }
-    .warn{ color:#b00020; font-size:12px; margin-top:6px; }
+    .timer-buttons{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .micro{ font-size:12px; color:#b04; display:none; margin-top:8px;}
 
-    /* ID helper (shown if wrong ID) */
-    .idbar{
-      display:none; margin-bottom:10px; padding:10px 12px; border-radius:12px; background:#fff2f2; border:1px solid #ffcccc; color:#7a1a1a;
+    @media (max-width:560px){
+      .wrap{ margin:18px 12px }
+      .clock{ width:92px; height:92px }
+      .time-inputs input{ width:80px }
     }
-    .idbar.show{ display:block; }
-    @media (max-width:560px){ .wrap{ margin:18px 12px } .timer-grid{ grid-template-columns: 1fr; } .dial{ margin:0 auto; } }
   </style>
 </head>
 <body>
-  <canvas id="bg" aria-hidden="true"></canvas>
+  <div class="fireflies" aria-hidden="true"></div>
 
   <main class="wrap" role="main">
     <div class="header">
-      <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12M6 12h9M6 17h6" stroke="#2b2118" stroke-width="2" stroke-linecap="round"/></svg>
+      <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 7h12M6 12h9M6 17h6" stroke="#2b2118" stroke-width="2" stroke-linecap="round"/>
+      </svg>
       <div>
         <h1>Welcome to PET Control Panel</h1>
         <p class="sub">PET aka Personal Empowerment Tool will cheer you on across your tabs.</p>
         <p class="sub">Instruction: Add pep lines below for your PET. One line per row.</p>
       </div>
-    </div>
-
-    <div id="idbar" class="idbar">
-      Can’t reach the extension. Check your <b>EXT_ID</b> below matches the ID in <code>chrome://extensions</code> →
-      <input id="idInput" style="width:320px;margin-left:8px;padding:6px 8px;border-radius:8px;border:1px solid #e0cfc0" />
     </div>
 
     <div class="field">
@@ -143,48 +147,43 @@ Tiny step now, future you says thanks."></textarea>
 
     <!-- Timer -->
     <section class="timer-card" aria-label="Timer">
-      <div class="timer-head">⏱️ Timer</div>
-      <div class="timer-grid">
-        <div class="dial"><span id="dial">00:00</span></div>
-        <div class="inputs">
-          <label>Hours   <input id="h" type="number" min="0" max="23" value="0"></label>
-          <label>Minutes <input id="m" type="number" min="0" max="59" value="25"></label>
-          <label>Seconds <input id="s" type="number" min="0" max="59" value="0"></label>
-          <div class="controls">
-            <button id="start" class="pill">Start</button>
-            <button id="pause" class="pill">Pause</button>
-            <button id="reset" class="pill">Reset</button>
-            <button id="p5"   class="pill">5 min</button>
-            <button id="p25"  class="pill">25 min</button>
-          </div>
-          <div class="warn" id="audioWarn" style="display:none">Note: most browsers require one click before sounds can play.</div>
+      <div class="timer-head">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2h8M12 8v5l3 2M6.5 6.5l-1 1M17.5 6.5l1 1" stroke="#2b2118" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        Timer
+      </div>
+
+      <div class="row" style="align-items:center">
+        <div class="clock"><span id="readout">00:00</span></div>
+
+        <div class="time-inputs">
+          <label>Hours <input id="h" type="number" min="0" step="1" value="0"></label>
+          <label>Minutes <input id="m" type="number" min="0" step="1" value="25"></label>
+          <label>Seconds <input id="s" type="number" min="0" step="1" value="0"></label>
+        </div>
+
+        <div class="timer-buttons">
+          <button id="start" class="btn peach">Start</button>
+          <button id="pause" class="btn teal">Pause</button>
+          <button id="reset" class="btn" style="--bg:#8b6b5a">Reset</button>
+          <button data-preset="300" class="btn" style="--bg:#e7b08a">5 min</button>
+          <button data-preset="1500" class="btn" style="--bg:#b3d2c6">25 min</button>
         </div>
       </div>
+
+      <div id="audioHint" class="micro">Note: most browsers need one click (Start) before sounds can play.</div>
     </section>
 
     <div id="status" class="hint" role="status" aria-live="polite"></div>
-    <div class="badges">
-      <span class="chip"><span class="dot"></span> Works in Google Chrome (desktop)</span>
-      <span class="chip"><span class="dot mint"></span> Requires PET extension installed</span>
+
+    <div class="row" style="gap:10px; flex-wrap:wrap">
+      <span class="hint" style="padding:.5rem .8rem; background:#fff8f1; border:1px solid #f2decf; border-radius:999px">Works in Google Chrome (desktop)</span>
+      <span class="hint" style="padding:.5rem .8rem; background:#f5fffb; border:1px solid #d7efe6; border-radius:999px">Requires PET extension installed</span>
     </div>
   </main>
 
   <script>
-    /* ======= soft drifting background ======= */
-    const c = document.getElementById('bg'), ctx = c.getContext('2d');
-    let blobs=[], DPR=window.devicePixelRatio||1;
-    function size(){ c.width=innerWidth*DPR; c.height=innerHeight*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
-      blobs = Array.from({length:10},(_,i)=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:80+Math.random()*160,h:[22,340,160][i%3],a:.22+.12*Math.random(),vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25}));
-    } size(); addEventListener('resize',size);
-    function loop(){ ctx.clearRect(0,0,innerWidth,innerHeight); for(const b of blobs){ b.x+=b.vx; b.y+=b.vy;
-      if(b.x<-b.r) b.x=innerWidth+b.r; if(b.x>innerWidth+b.r) b.x=-b.r; if(b.y<-b.r) b.y=innerHeight+b.r; if(b.y>innerHeight+b.r) b.y=-b.r;
-      const g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r); g.addColorStop(0,`hsla(${b.h} 92% 75% / ${b.a})`); g.addColorStop(1,`hsla(${b.h} 92% 75% / 0)`); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill(); }
-      requestAnimationFrame(loop);} loop();
-
-    /* ======= PET wiring ======= */
-    let EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd";  // <— Replace with YOUR current ID from chrome://extensions
-    const idInput = document.getElementById('idInput'); idInput.value = EXT_ID;
-
+    /* ===== PET wiring ===== */
+    const EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd";
     const statusEl = document.getElementById('status');
     const linesEl  = document.getElementById('lines');
     const saveBtn  = document.getElementById('save');
@@ -193,38 +192,41 @@ Tiny step now, future you says thanks."></textarea>
     const canUseAPI = () =>
       typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.sendMessage === "function";
 
-    function say(txt, ok=true){ statusEl.textContent = txt; statusEl.className = "hint " + (ok? "ok":"err"); }
-    function ripple(e){ const r=document.createElement('span'); r.className='r'; e.currentTarget.appendChild(r); r.style.left=e.offsetX+'px'; r.style.top=e.offsetY+'px'; r.addEventListener('animationend',()=>r.remove()); }
-    [saveBtn, loadBtn].forEach(b=>b.addEventListener('click', ripple));
+    const say = (txt, ok=true)=>{ statusEl.textContent = txt; statusEl.className = "hint " + (ok? "ok":"err"); };
+    const getLines = () => linesEl.value.split('\n').map(s => s.trim()).filter(Boolean);
 
-    function sendToPET(payload, cb){
+    function sendToPET(payload, cb) {
       if (!canUseAPI()) { say("Chrome API not available. Use Google Chrome on desktop.", false); cb?.(null); return; }
       chrome.runtime.sendMessage(EXT_ID, payload, (resp) => {
-        if (chrome.runtime.lastError) {
-          const msg = chrome.runtime.lastError.message || "";
-          if (/No such extension|Receiving end does not exist/i.test(msg)) {
-            // likely wrong ID
-            document.getElementById('idbar').classList.add('show');
-            say("Can't reach PET. Check the extension ID above.", false);
-          } else {
-            say("Could not reach PET: " + msg, false);
-          }
-          cb?.(null); return;
-        }
+        if (chrome.runtime.lastError) { say("Could not reach PET: " + chrome.runtime.lastError.message, false); cb?.(null); return; }
         cb?.(resp);
       });
     }
 
-    function getLines(){ return linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean); }
+    function ripple(e){
+      const r=document.createElement('span'); r.className='r';
+      e.currentTarget.appendChild(r); r.style.left=e.offsetX+'px'; r.style.top=e.offsetY+'px';
+      r.addEventListener('animationend', ()=>r.remove());
+    }
+    [saveBtn, loadBtn].forEach(b=>b.addEventListener('click', ripple));
+
+    function confetti(){
+      const N=32;
+      for(let i=0;i<N;i++){
+        const s=document.createElement('div'), size=6+Math.random()*8;
+        s.textContent=['✨','🐶','🌟','💖','🍀'][i%5];
+        Object.assign(s.style,{position:'fixed',zIndex:9999,left:(Math.random()*100)+'vw',top:'-10vh',fontSize:size+'px',transition:'transform 1.2s ease-out, opacity 1.2s ease-out'});
+        document.body.appendChild(s);
+        requestAnimationFrame(()=>{ s.style.transform=`translateY(${110+Math.random()*20}vh) rotate(${(Math.random()-.5)*360}deg)`; s.style.opacity='0'; });
+        setTimeout(()=>s.remove(),1300);
+      }
+    }
 
     saveBtn.addEventListener('click', () => {
-      EXT_ID = idInput.value.trim() || EXT_ID; // allow quick correction
       const lines = getLines();
       if (!lines.length) { say("Add at least one line.", false); return; }
       const sayNow = lines[lines.length - 1];
-      saveBtn.classList.add('is-sending'); saveBtn.disabled = true;
       sendToPET({ type: "PET_ADD_LINES", lines }, (resp) => {
-        saveBtn.classList.remove('is-sending'); saveBtn.disabled = false;
         if (!(resp && resp.ok)) { say("PET error: " + (resp?.error || "Unknown"), false); return; }
         sendToPET({ type: "PET_SAY_NOW", text: sayNow }, (r2) => {
           if (r2?.ok) { say(`Saved & said: “${sayNow}”`); confetti(); }
@@ -234,10 +236,7 @@ Tiny step now, future you says thanks."></textarea>
     });
 
     loadBtn.addEventListener('click', () => {
-      EXT_ID = idInput.value.trim() || EXT_ID;
-      loadBtn.classList.add('is-sending'); loadBtn.disabled = true;
       sendToPET({ type: "PET_GET_LINES" }, (resp) => {
-        loadBtn.classList.remove('is-sending'); loadBtn.disabled = false;
         if (resp?.ok) { linesEl.value = (resp.lines || []).join('\n'); say(`Loaded ${resp.lines?.length || 0} lines from PET.`); }
         else { say("PET error: " + (resp?.error || "Unknown"), false); }
       });
@@ -247,51 +246,94 @@ Tiny step now, future you says thanks."></textarea>
       if (!canUseAPI()) { say("Chrome API not available. Use Google Chrome on desktop.", false); return; }
       sendToPET({ type: "PET_GET_LINES" }, (resp) => {
         if (resp?.ok) { linesEl.value = (resp.lines || []).join('\n'); say(`Connected to PET. ${resp.lines?.length || 0} custom lines loaded.`); }
-        else { say("Could not connect to PET. Check the ID banner above.", false); document.getElementById('idbar').classList.add('show'); }
+        else { say("Could not connect to PET. Check manifest origins and reload the extension.", false); }
       });
     });
 
-    function confetti(){
-      const N=28;
-      for(let i=0;i<N;i++){
-        const s=document.createElement('div'), size = 6+Math.random()*8;
-        s.textContent = ['✨','🐶','🌟','💖','🍀'][i%5];
-        s.style.position='fixed'; s.style.zIndex=9999; s.style.left=(Math.random()*100)+'vw'; s.style.top='-10vh';
-        s.style.fontSize=size+'px'; s.style.transition='transform 1.2s ease-out, opacity 1.2s ease-out';
-        document.body.appendChild(s);
-        requestAnimationFrame(()=>{ s.style.transform=`translateY(${110+Math.random()*20}vh) rotate(${(Math.random()-.5)*360}deg)`; s.style.opacity='0'; });
-        setTimeout(()=>s.remove(),1300);
-      }
+    /* ===== Timer with cute chime ===== */
+    const readout = document.getElementById('readout');
+    const hEl = document.getElementById('h');
+    const mEl = document.getElementById('m');
+    const sEl = document.getElementById('s');
+    const startBtn = document.getElementById('start');
+    const pauseBtn = document.getElementById('pause');
+    const resetBtn = document.getElementById('reset');
+    const audioHint = document.getElementById('audioHint');
+
+    let total = 0, left = 0, ticking = null;
+    let audioCtx = null; // created on first Start
+
+    function fmt(n){ return String(n).padStart(2,'0'); }
+    function render(sec){
+      const m = Math.floor(sec/60), s = sec%60;
+      readout.textContent = `${fmt(m)}:${fmt(s)}`;
+    }
+    function inputsToSeconds(){
+      const h = Math.max(0, parseInt(hEl.value||'0',10));
+      const m = Math.max(0, parseInt(mEl.value||'0',10));
+      const s = Math.max(0, parseInt(sEl.value||'0',10));
+      return (h*3600)+(m*60)+s;
     }
 
-    /* ======= Timer ======= */
-    const h=document.getElementById('h'), m=document.getElementById('m'), s=document.getElementById('s');
-    const start=document.getElementById('start'), pause=document.getElementById('pause'), reset=document.getElementById('reset'), p5=document.getElementById('p5'), p25=document.getElementById('p25');
-    const dial=document.getElementById('dial'), warn=document.getElementById('audioWarn');
-    let remaining=0, t=null, audioUnlocked=false;
+    async function ensureAudio(){
+      if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      if (audioCtx.state !== 'running') { await audioCtx.resume(); audioHint.style.display='none'; }
+      return audioCtx;
+    }
+    function chime(){
+      if (!audioCtx) return; // safety
+      const now = audioCtx.currentTime;
+      const g = audioCtx.createGain(); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(0.0001, now);
 
-    const chime = new Audio('data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAA...'); // short gentle chime (inlined)
-    function unlock(){ if(!audioUnlocked){ chime.play().then(()=>{chime.pause(); chime.currentTime=0; audioUnlocked=true;}).catch(()=>{ warn.style.display='block';}); } }
-    ['click','touchstart'].forEach(ev=>document.addEventListener(ev,unlock,{once:true,passive:true}));
-
-    function fmt(sec){ const mm = Math.floor(sec/60), ss = sec%60; return (mm<10?'0':'')+mm+':'+(ss<10?'0':'')+ss; }
-    function updateDial(){ dial.textContent = fmt(remaining); }
-    function compute(){ const hh=+h.value||0, mm=+m.value||0, ss=+s.value||0; return Math.max(0, Math.floor(hh*3600+mm*60+ss)); }
-
-    function tick(){
-      remaining--; updateDial();
-      if (remaining<=0){ clearInterval(t); t=null; remaining=0; updateDial();
-        chime.play().catch(()=>{});  // best effort
-        sendToPET({ type:"PET_SAY_NOW", text:"Time’s up!" }, ()=>{});
-      }
+      const notes = [880, 1175, 988]; // A6, D7, B6 – soft friendly beeps
+      notes.forEach((freq, i)=>{
+        const t = now + i*0.18;
+        const o = audioCtx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(freq, t);
+        o.connect(g);
+        g.gain.exponentialRampToValueAtTime(0.25, t+0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+0.28);
+        o.start(t); o.stop(t+0.3);
+      });
     }
 
-    start.onclick = ()=>{ EXT_ID = idInput.value.trim() || EXT_ID; remaining = compute(); if(remaining<=0) return; if(t) clearInterval(t); t=setInterval(tick,1000); updateDial(); };
-    pause.onclick = ()=>{ if(t){ clearInterval(t); t=null; } };
-    reset.onclick = ()=>{ if(t){ clearInterval(t); t=null; } remaining=0; updateDial(); };
-    p5.onclick = ()=>{ h.value=0; m.value=5; s.value=0; updateDial(); };
-    p25.onclick= ()=>{ h.value=0; m.value=25; s.value=0; updateDial(); };
-    updateDial();
+    function timeUp(){
+      render(0); left = 0; clearInterval(ticking); ticking=null;
+      // say via extension + play chime
+      sendToPET({ type: "PET_SAY_NOW", text: "Time’s up!" }, ()=>{});
+      if (audioCtx) chime();
+    }
+
+    startBtn.addEventListener('click', async ()=>{
+      total = inputsToSeconds();
+      if (total <= 0) return;
+      await ensureAudio(); // user gesture unlocks sound
+      left = total; render(left);
+      clearInterval(ticking);
+      ticking = setInterval(()=>{
+        left -= 1; render(Math.max(0,left));
+        if (left <= 0) timeUp();
+      }, 1000);
+    });
+
+    pauseBtn.addEventListener('click', ()=>{
+      if (ticking){ clearInterval(ticking); ticking=null; }
+    });
+    resetBtn.addEventListener('click', ()=>{
+      clearInterval(ticking); ticking=null; left = inputsToSeconds(); render(left);
+    });
+    document.querySelectorAll('[data-preset]').forEach(b=>{
+      b.addEventListener('click', (e)=>{
+        const sec = parseInt(e.currentTarget.dataset.preset,10)||0;
+        hEl.value = Math.floor(sec/3600);
+        mEl.value = Math.floor((sec%3600)/60);
+        sEl.value = sec%60;
+        render(sec);
+      });
+    });
+
+    // initial display
+    left = inputsToSeconds(); render(left);
   </script>
 </body>
 </html>
