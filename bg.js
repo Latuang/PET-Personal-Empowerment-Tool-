@@ -1,9 +1,18 @@
+// ===== PET background (service worker) =====
+
+// How often to nudge by default (minutes)
 const DEFAULT_PERIOD_MIN = 45;
-const ALARM_NAME = 'pet-nudge';
+
+// Helper: send a message to all http/https tabs that have our content script
+function broadcastToAll(message) {
+  chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }, (tabs) => {
+    for (const t of tabs) if (t.id) chrome.tabs.sendMessage(t.id, message);
+  });
+}
 
 function scheduleAlarm(period) {
-  chrome.alarms.clear(ALARM_NAME, () => {
-    chrome.alarms.create(ALARM_NAME, { periodInMinutes: period });
+  chrome.alarms.clear('pet-nudge', () => {
+    chrome.alarms.create('pet-nudge', { periodInMinutes: period });
   });
 }
 
@@ -13,59 +22,46 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg?.type === 'RESCHEDULE') {
-    chrome.storage.sync.get(['periodMinutes'], (cfg) => {
-      scheduleAlarm(cfg.periodMinutes || DEFAULT_PERIOD_MIN);
-    });
-  }
-});
-
+// Alarm → nudge all tabs
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name !== ALARM_NAME) return;
-  broadcastNudge();
+  if (alarm.name !== 'pet-nudge') return;
+  broadcastToAll({ type: 'NUDGE', payload: null });
 });
 
-function broadcastNudge(payload = null) {
-  chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }, (tabs) => {
-    for (const t of tabs) if (t.id) {
-      chrome.tabs.sendMessage(t.id, { type: 'NUDGE', payload });
-    }
-  });
-}
-
+// Small helper to say a line now everywhere
 function broadcastSay(text) {
   if (!text) return;
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const t = tabs[0];
-    if (t?.id) chrome.tabs.sendMessage(t.id, { type: 'PET_SAY', text });
-  });
+  broadcastToAll({ type: 'PET_SAY', text });
+  // storage echo so content scripts that miss the runtime msg still catch it
   chrome.storage.sync.set({ petSpeakNow: { text, at: Date.now() } });
 }
 
+// Keep all tabs in sync when storage changes (even if not triggered by control page)
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'sync') return;
+  if (changes.petCustomLines) {
+    const lines = Array.isArray(changes.petCustomLines.newValue)
+      ? changes.petCustomLines.newValue : [];
+    // Tell every existing PET to swap to the latest lines immediately
+    broadcastToAll({ type: 'LINES_UPDATED', lines });
+  }
+});
 
-
-
-const ALLOWED_ORIGINS = new Set([
-  "https://latuang.github.io",
-  "http://localhost:3000"
-]);
-
+// External API (control panel page talks to us via extension ID)
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   try {
+    // Only allow from your control panel host(s)
     const origin = sender?.origin || (sender?.url ? new URL(sender.url).origin : "");
-    if (!ALLOWED_ORIGINS.has(origin)) {
+    const allowed = new Set([
+      "https://latuang.github.io",
+      "https://latuang.github.io"
+    ]);
+    if (![...allowed].some(a => origin.startsWith(a))) {
       sendResponse({ ok: false, error: "Origin not allowed", got: origin });
       return;
     }
 
-    if (msg?.type === "PET_SAY_NOW" && typeof msg.text === 'string' && msg.text.trim()) {
-      const text = msg.text.trim();
-      broadcastSay(text);
-      sendResponse({ ok: true, said: text });
-      return true;
-    }
-
+    // Save + merge custom lines, then notify every tab and optionally say the last line
     if (msg?.type === "PET_ADD_LINES" && Array.isArray(msg.lines)) {
       const cleaned = msg.lines.map(s => String(s).trim()).filter(Boolean);
       chrome.storage.sync.get(['petCustomLines'], (cfg) => {
@@ -74,13 +70,16 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
         const last   = cleaned[cleaned.length - 1] || null;
 
         chrome.storage.sync.set({ petCustomLines: merged }, () => {
+          // Immediately push to all open tabs (no refresh needed)
+          broadcastToAll({ type: 'LINES_UPDATED', lines: merged });
           if (last) broadcastSay(last);
           sendResponse({ ok: true, count: merged.length, said: last || null });
         });
       });
-      return true;
+      return true; // async
     }
 
+    // Ask for current list
     if (msg?.type === "PET_GET_LINES") {
       chrome.storage.sync.get(['petCustomLines'], (cfg) => {
         sendResponse({ ok: true, lines: cfg.petCustomLines || [] });
@@ -88,9 +87,19 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       return true;
     }
 
-    if (msg?.type === "PET_CLEAR_LINES") {
-      chrome.storage.sync.set({ petCustomLines: [] }, () => {
-        sendResponse({ ok: true, count: 0 });
+    // Force a “say now” for all tabs
+    if (msg?.type === "PET_SAY_NOW" && typeof msg.text === "string" && msg.text.trim()) {
+      const text = msg.text.trim();
+      broadcastSay(text);
+      sendResponse({ ok: true, said: text });
+      return true;
+    }
+
+    // From popup: re-schedule
+    if (msg?.type === "RESCHEDULE") {
+      chrome.storage.sync.get(['periodMinutes'], (cfg) => {
+        scheduleAlarm(cfg.periodMinutes || DEFAULT_PERIOD_MIN);
+        sendResponse({ ok: true });
       });
       return true;
     }
