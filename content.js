@@ -53,7 +53,7 @@ if (window.top !== window) { /* do nothing in iframes */ } else (function instal
     "Future you will thank you for this."
   ];
   let customLines = [];
-  chrome.storage.sync.get(['petCustomLines'], (cfg) => {
+  chrome.storage.local.get(['petCustomLines'], (cfg) => {
     if (Array.isArray(cfg.petCustomLines)) customLines = cfg.petCustomLines;
   });
   const randomLine = () => {
@@ -131,12 +131,14 @@ if (window.top !== window) { /* do nothing in iframes */ } else (function instal
       showBubble(msg.payload || randomLine());
     } else if (msg?.type === 'PET_SAY' && typeof msg.text === 'string') {
       showBubble(msg.text);
+    } else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) {
+      customLines = msg.lines;
     }
   });
 
   // Sync changes & say-now fallback
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'sync') return;
+    if (area !== 'local') return;
     if (changes.petCustomLines) {
       const next = changes.petCustomLines.newValue;
       customLines = Array.isArray(next) ? next : [];
