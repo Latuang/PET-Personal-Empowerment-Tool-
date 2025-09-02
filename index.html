@@ -37,7 +37,6 @@
       overflow-x:hidden;
     }
 
-    /* gentle drifting blobs (very subtle) */
     canvas#bg{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.75 }
 
     .wrap{
@@ -113,7 +112,6 @@
     .dot{ width:10px;height:10px;border-radius:50%; background:#ffb39f; box-shadow:0 0 10px #ffb39f; }
     .dot.mint{ background:#a8e4d2; box-shadow:0 0 10px #a8e4d2; }
 
-    /* ===== Timer card ===== */
     .timer{
       margin-top: 18px;
       border:1px solid #f0e4d9;
@@ -133,7 +131,6 @@
       align-items:center;
     }
 
-    /* circular clock */
     .clock{
       width: 260px; height: 260px;
       display:grid; place-items:center;
@@ -154,7 +151,6 @@
       font-size: 28px;
     }
 
-    /* input + actions */
     .inputs{
       display:grid; grid-template-columns: repeat(3, minmax(120px, 1fr));
       gap:14px; align-self:start;
@@ -191,7 +187,6 @@
   </style>
 </head>
 <body>
-  <!-- subtle animated background -->
   <canvas id="bg" aria-hidden="true"></canvas>
 
   <main class="wrap" role="main">
@@ -296,7 +291,7 @@ Tiny step now, future you says thanks."></textarea>
     })();
 
     /* ---------- PET wiring ---------- */
-    const EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd"; // your extension id
+    const EXT_ID = "YOUR_EXTENSION_ID_HERE"; // <— replace with your real extension ID
     const statusEl = document.getElementById('status');
     const linesEl  = document.getElementById('lines');
     const saveBtn  = document.getElementById('save');
@@ -310,10 +305,15 @@ Tiny step now, future you says thanks."></textarea>
 
     function sendToPET(payload, cb) {
       if (!canUseAPI()) { say("Chrome API not available. Use Google Chrome on desktop.", false); cb?.(null); return; }
-      chrome.runtime.sendMessage(EXT_ID, payload, (resp) => {
-        if (chrome.runtime.lastError) { say("Could not reach PET: " + chrome.runtime.lastError.message, false); cb?.(null); return; }
-        cb?.(resp);
-      });
+      try {
+        chrome.runtime.sendMessage(EXT_ID, payload, (resp) => {
+          if (chrome.runtime.lastError) { say("Could not reach PET (check Extension ID & permissions): " + chrome.runtime.lastError.message, false); cb?.(null); return; }
+          cb?.(resp);
+        });
+      } catch (e) {
+        say("Could not reach PET: " + (e?.message || e), false);
+        cb?.(null);
+      }
     }
 
     function ripple(e){
@@ -341,9 +341,104 @@ Tiny step now, future you says thanks."></textarea>
       }
     }
 
+    // ------- SAVE to PET -------
     saveBtn.addEventListener('click', () => {
       const lines = getLines();
       if (!lines.length) { say("Add at least one line.", false); return; }
       const sayNow = lines[lines.length - 1];
+
       saveBtn.disabled = true; saveBtn.classList.add('is-sending');
-      sendToPET({ type: "PET
+
+      sendToPET({ type: "PET_ADD_LINES", lines }, (resp) => {
+        saveBtn.disabled = false; saveBtn.classList.remove('is-sending');
+
+        if (!(resp && resp.ok)) { say("PET error: " + (resp?.error || "Unknown"), false); return; }
+
+        // Have PET speak the last line now (content script shows it)
+        sendToPET({ type: "PET_SAY_NOW", text: sayNow }, (r2) => {
+          if (r2?.ok) { say(`Saved & said: “${sayNow}”`); confetti(); }
+          else { say("Saved, but could not trigger speech.", false); }
+        });
+      });
+    });
+
+    // ------- LOAD from PET -------
+    loadBtn.addEventListener('click', () => {
+      loadBtn.disabled = true; loadBtn.classList.add('is-sending');
+      sendToPET({ type: "PET_GET_LINES" }, (resp) => {
+        loadBtn.disabled = false; loadBtn.classList.remove('is-sending');
+        if (resp?.ok) {
+          linesEl.value = (resp.lines || []).join('\n');
+          say(`Loaded ${resp.lines?.length || 0} lines from PET.`);
+        } else {
+          say("PET error: " + (resp?.error || "Unknown"), false);
+        }
+      });
+    });
+
+    // Keep textarea BLANK on load; just verify we can talk to the extension
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!canUseAPI()) { say("Chrome API not available. Use Google Chrome on desktop.", false); return; }
+      sendToPET({ type: "PET_GET_LINES" }, (resp) => {
+        if (resp?.ok) say("Connected to PET. Click “Load from PET 🍃” to import your saved lines.");
+        else say("Could not connect to PET. Check manifest 'externally_connectable' & Extension ID.", false);
+      });
+    });
+
+    /* ---------- Minimal timer logic to match the UI ---------- */
+    const ticksG = document.querySelector('.ticks');
+    for (let i=0;i<60;i++){
+      const a = (Math.PI*2/60)*i;
+      const r1 = 90, r2 = (i%5===0)?96:94;
+      const x1 = 100 + Math.cos(a)*r1, y1 = 100 + Math.sin(a)*r1;
+      const x2 = 100 + Math.cos(a)*r2, y2 = 100 + Math.sin(a)*r2;
+      const L = document.createElementNS('http://www.w3.org/2000/svg','line');
+      L.setAttribute('x1',x1); L.setAttribute('y1',y1); L.setAttribute('x2',x2); L.setAttribute('y2',y2);
+      ticksG.appendChild(L);
+    }
+
+    const hI=document.getElementById('h'), mI=document.getElementById('m'), sI=document.getElementById('s');
+    const startBtn=document.getElementById('start'), pauseBtn=document.getElementById('pause'), resetBtn=document.getElementById('reset');
+    const p5=document.getElementById('p5'), p25=document.getElementById('p25');
+    const hand=document.getElementById('hand'), ring=document.getElementById('ring'), lcd=document.getElementById('lcd');
+
+    let total=0, left=0, timer=null;
+
+    function updateFace(){
+      const mins = Math.floor(left/60), secs = left%60;
+      lcd.textContent = String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0');
+      const frac = total? (left/total):0;
+      ring.style.strokeDashoffset = (1-frac)*490;
+      const angle = -90 + (1-frac)*360;
+      hand.style.transform = `rotate(${angle}deg)`;
+    }
+
+    function setFromInputs(){
+      total = left = (+hI.value*3600) + (+mI.value*60) + (+sI.value|0);
+      updateFace();
+    }
+
+    function start(){
+      if (left<=0) setFromInputs();
+      if (left<=0) return;
+      clearInterval(timer);
+      timer = setInterval(()=>{
+        left = Math.max(0, left-1);
+        updateFace();
+        if (left===0){ clearInterval(timer); }
+      },1000);
+    }
+
+    function pause(){ clearInterval(timer); }
+    function reset(){ pause(); setFromInputs(); }
+
+    startBtn.addEventListener('click', start);
+    pauseBtn.addEventListener('click', pause);
+    resetBtn.addEventListener('click', reset);
+    p5.addEventListener('click', ()=>{ hI.value=0;mI.value=5;sI.value=0; setFromInputs(); });
+    p25.addEventListener('click', ()=>{ hI.value=0;mI.value=25;sI.value=0; setFromInputs(); });
+
+    setFromInputs();
+  </script>
+</body>
+</html>
