@@ -349,7 +349,7 @@ Tiny step now, future you says thanks."></textarea>
       });
     });
 
-    /* ---------- Minimal timer logic (fixed) ---------- */
+    /* ---------- Minimal timer logic (fixed + chime + PET “Time’s up”) ---------- */
     const ticksG = document.querySelector('.ticks');
     for (let i=0;i<60;i++){
       const a = (Math.PI*2/60)*i;
@@ -385,16 +385,61 @@ Tiny step now, future you says thanks."></textarea>
       updateFace();
     }
 
+    // --- simple 4s chime using Web Audio (no external files) ---
+    let audioCtx = null;
+    function ensureAudio(){
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+    function playChime(){
+      ensureAudio();
+      const ctx = audioCtx;
+      const now = ctx.currentTime;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.connect(ctx.destination);
+
+      // Arpeggiated pleasant triad over ~4s
+      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+      const per = 0.5; // 0.5s per note × 8 = 4s
+      for (let i=0;i<8;i++){
+        const osc = ctx.createOscillator();
+        const f = notes[i % notes.length];
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, now + i*per);
+        osc.connect(gain);
+        // envelope
+        gain.gain.linearRampToValueAtTime(0.25, now + i*per + 0.06);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + (i+1)*per);
+        osc.start(now + i*per);
+        osc.stop(now + (i+1)*per);
+      }
+    }
+
+    function onTimerDone(){
+      // Tell PET to speak
+      sendToPET({ type: "PET_SAY_NOW", text: "Time’s up! Nice work." });
+      // Play chime for ~4s
+      playChime();
+    }
+
     function start(){
-      // ✅ Always use the latest numbers the user typed
+      // Always use the latest numbers the user typed
       setFromInputs();
       if (left<=0) return;
       clearInterval(timer);
       timer = setInterval(()=>{
         left = Math.max(0, left-1);
         updateFace();
-        if (left===0){ clearInterval(timer); }
+        if (left===0){
+          clearInterval(timer);
+          onTimerDone();
+        }
       },1000);
+      // unlock audio context on user gesture (some browsers require)
+      ensureAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
     function pause(){ clearInterval(timer); }
