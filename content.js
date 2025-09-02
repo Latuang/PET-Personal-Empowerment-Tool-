@@ -1,10 +1,8 @@
 // Only inject in the top frame (avoid ads/iframes)
 if (window.top !== window) { /* do nothing in iframes */ } else (function install() {
-  // Avoid duplicate injection
   if (document.documentElement.dataset.petInstalled === "1") return;
   document.documentElement.dataset.petInstalled = "1";
 
-  // Root
   const root = document.createElement("div");
   root.id = "pet-root";
   document.documentElement.appendChild(root);
@@ -25,26 +23,20 @@ if (window.top !== window) { /* do nothing in iframes */ } else (function instal
   const bubble = root.querySelector('#pet-bubble');
   const textEl = root.querySelector('#pet-text');
 
-  // Place bubble nicely near the “mouth”
   function positionBubble() {
     const rect = wrap.getBoundingClientRect();
     const spaceRight = window.innerWidth - rect.right;
     const spaceLeft  = rect.left;
     const preferRight = spaceRight >= 220 || spaceRight > spaceLeft;
-
     bubble.classList.toggle('right', preferRight);
     bubble.classList.toggle('left', !preferRight);
-
     const v = getComputedStyle(wrap).getPropertyValue('--mouth-y').trim();
     const mouthY = Number.parseInt(v || '22', 10);
-    const POINTER_OFFSET = 12;
-    const TAIL_ADJUST = 6;
-
+    const POINTER_OFFSET = 12, TAIL_ADJUST = 6;
     bubble.style.top = `${Math.max(0, mouthY - POINTER_OFFSET)}px`;
     bubble.style.setProperty('--tail-y', `${mouthY - TAIL_ADJUST}px`);
   }
 
-  // Lines
   const DEFAULTS = [
     "Small steps still move you forward.",
     "Momentum beats motivation—start tiny.",
@@ -61,14 +53,12 @@ if (window.top !== window) { /* do nothing in iframes */ } else (function instal
     return pool[Math.floor(Math.random() * pool.length)] || "You’ve got this.";
   };
 
-  // Show/hide bubble
   let hideTimer = null;
   function showBubble(text) {
     positionBubble();
     textEl.textContent = text;
     bubble.classList.add('show');
     bubble.classList.remove('fadeout');
-
     const msPerChar = 55;
     const dur = Math.max(2500, Math.min(8000, text.length * msPerChar));
     clearTimeout(hideTimer);
@@ -78,12 +68,10 @@ if (window.top !== window) { /* do nothing in iframes */ } else (function instal
     }, dur);
   }
 
-  // Click vs. drag (prevents “disappear” on quick taps)
   (function enableDrag(handle, container) {
-    const DRAG_THRESHOLD = 4; // px
+    const DRAG_THRESHOLD = 4;
     let dragging = false, down = false;
     let sx=0, sy=0, sl=0, st=0;
-
     const onDown = (e) => {
       down = true; dragging = false;
       handle.style.cursor = 'grabbing';
@@ -91,11 +79,9 @@ if (window.top !== window) { /* do nothing in iframes */ } else (function instal
       sl = r.left; st = r.top; sx = e.clientX; sy = e.clientY;
       e.preventDefault(); e.stopPropagation();
     };
-
     const onMove = (e) => {
       if (!down) return;
-      const dx = e.clientX - sx;
-      const dy = e.clientY - sy;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
       if (!dragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
         dragging = true;
         container.style.position = 'fixed';
@@ -108,41 +94,26 @@ if (window.top !== window) { /* do nothing in iframes */ } else (function instal
         positionBubble();
       }
     };
-
     const onUp = (e) => {
       if (!down) return;
       down = false; handle.style.cursor = 'grab';
       if (!dragging) { e.preventDefault(); e.stopPropagation(); showBubble(randomLine()); }
     };
-
     handle.addEventListener('mousedown', onDown, { passive:false });
     window.addEventListener('mousemove', onMove, { passive:true });
     window.addEventListener('mouseup', onUp, { passive:true });
-
-    // Safety: click can still fire after small drags on some platforms
-    handle.addEventListener('click', (e) => {
-      if (!dragging) { e.stopPropagation(); showBubble(randomLine()); }
-    });
+    handle.addEventListener('click', (e) => { if (!dragging) { e.stopPropagation(); showBubble(randomLine()); } });
   })(avatar, root);
 
-  // Messages from background / control panel
   chrome.runtime.onMessage.addListener((msg) => {
-    if (msg?.type === 'NUDGE') {
-      showBubble(msg.payload || randomLine());
-    } else if (msg?.type === 'PET_SAY' && typeof msg.text === 'string') {
-      showBubble(msg.text);
-    } else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) {
-      customLines = msg.lines;
-    }
+    if (msg?.type === 'NUDGE') showBubble(msg.payload || randomLine());
+    else if (msg?.type === 'PET_SAY' && typeof msg.text === 'string') showBubble(msg.text);
+    else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) customLines = msg.lines;
   });
 
-  // Sync changes & say-now fallback
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
-    if (changes.petCustomLines) {
-      const next = changes.petCustomLines.newValue;
-      customLines = Array.isArray(next) ? next : [];
-    }
+    if (changes.petCustomLines) customLines = Array.isArray(changes.petCustomLines.newValue) ? changes.petCustomLines.newValue : [];
     if (changes.petSpeakNow) {
       const v = changes.petSpeakNow.newValue;
       if (v && typeof v.text === 'string' && typeof v.at === 'number') {
@@ -151,7 +122,6 @@ if (window.top !== window) { /* do nothing in iframes */ } else (function instal
     }
   });
 
-  // Re-attach if a site hot-rewrites the DOM
   const mo = new MutationObserver(() => {
     if (!document.getElementById('pet-root')) {
       document.documentElement.appendChild(root);
@@ -159,6 +129,5 @@ if (window.top !== window) { /* do nothing in iframes */ } else (function instal
   });
   mo.observe(document.documentElement, { childList: true });
 
-  // Initial alignment
   positionBubble();
 })();
