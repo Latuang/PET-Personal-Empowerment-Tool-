@@ -128,8 +128,7 @@
     }
 
     .t-grid{
-      display:grid;
-      grid-template-columns: 270px 1fr;
+      display:grid; grid-template-columns: 270px 1fr;
       gap:22px;
       align-items:center;
     }
@@ -221,16 +220,9 @@ Tiny step now, future you says thanks."></textarea>
     <section class="timer" aria-label="Timer">
       <h2>⏲️ Timer</h2>
       <div class="t-grid">
-        <!-- Clock -->
         <div class="clock" aria-live="polite">
           <svg viewBox="0 0 200 200" class="face-drop">
-            <!-- minute ticks -->
-            <g class="ticks">
-              <!-- 60 ticks -->
-              <script type="application/ecmascript"><![CDATA[
-                // (kept empty; ticks drawn by JS below)
-              ]]></script>
-            </g>
+            <g class="ticks"></g>
             <circle class="ring-bg" cx="100" cy="100" r="78"/>
             <circle class="ring" id="ring" cx="100" cy="100" r="78" stroke-dasharray="490" stroke-dashoffset="0"/>
             <line class="hand" id="hand" x1="100" y1="100" x2="100" y2="36"/>
@@ -238,7 +230,6 @@ Tiny step now, future you says thanks."></textarea>
           <div class="clock-label" id="lcd">00:00</div>
         </div>
 
-        <!-- Inputs + Buttons -->
         <div>
           <div class="inputs">
             <div class="ibox"><label>Hours</label>   <input id="h" type="number" min="0" value="0"></div>
@@ -304,7 +295,7 @@ Tiny step now, future you says thanks."></textarea>
       requestAnimationFrame(bgTick);
     })();
 
-    /* ---------- PET wiring (unchanged) ---------- */
+    /* ---------- PET wiring ---------- */
     const EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd"; // your extension id
     const statusEl = document.getElementById('status');
     const linesEl  = document.getElementById('lines');
@@ -355,165 +346,4 @@ Tiny step now, future you says thanks."></textarea>
       if (!lines.length) { say("Add at least one line.", false); return; }
       const sayNow = lines[lines.length - 1];
       saveBtn.disabled = true; saveBtn.classList.add('is-sending');
-      sendToPET({ type: "PET_ADD_LINES", lines }, (resp) => {
-        saveBtn.disabled = false; saveBtn.classList.remove('is-sending');
-        if (!(resp && resp.ok)) { say("PET error: " + (resp?.error || "Unknown"), false); return; }
-        sendToPET({ type: "PET_SAY_NOW", text: sayNow }, (r2) => {
-          if (r2?.ok) { say(`Saved & said: “${sayNow}”`); confetti(); }
-          else { say("Saved, but could not trigger speech.", false); }
-        });
-      });
-    });
-
-    loadBtn.addEventListener('click', () => {
-      loadBtn.disabled = true; loadBtn.classList.add('is-sending');
-      sendToPET({ type: "PET_GET_LINES" }, (resp) => {
-        loadBtn.disabled = false; loadBtn.classList.remove('is-sending');
-        if (resp?.ok) { linesEl.value = (resp.lines || []).join('\n'); say(`Loaded ${resp.lines?.length || 0} lines from PET.`); }
-        else { say("PET error: " + (resp?.error || "Unknown"), false); }
-      });
-    });
-
-    window.addEventListener('DOMContentLoaded', () => {
-      if (!canUseAPI()) { say("Chrome API not available. Use Google Chrome on desktop.", false); return; }
-      sendToPET({ type: "PET_GET_LINES" }, (resp) => {
-        if (resp?.ok) { linesEl.value = (resp.lines || []).join('\n'); say(`Connected to PET. ${resp.lines?.length || 0} custom lines loaded.`); }
-        else { say("Could not connect to PET. Check manifest origins and reload the extension.", false); }
-      });
-    });
-
-    /* ---------- Timer logic + cute chime ---------- */
-    const lcd = document.getElementById('lcd');
-    const ring = document.getElementById('ring');
-    const hand = document.getElementById('hand');
-    const hEl = document.getElementById('h'), mEl = document.getElementById('m'), sEl = document.getElementById('s');
-    const startBtn = document.getElementById('start'), pauseBtn = document.getElementById('pause');
-    const resetBtn = document.getElementById('reset'), p5 = document.getElementById('p5'), p25 = document.getElementById('p25');
-
-    const CIRC = 2*Math.PI*78;              // circumference of circle (r=78)
-    ring.setAttribute('stroke-dasharray', CIRC);
-    ring.style.strokeDashoffset = 0;
-
-    // draw minute ticks
-    (function drawTicks(){
-      const svg = ring.closest('svg');
-      const g = svg.querySelector('.ticks');
-      for(let i=0;i<60;i++){
-        const ang = (i/60)*2*Math.PI;
-        const r1 = i%5===0? 86: 88, r2 = i%5===0? 92: 90;
-        const x1 = 100 + Math.cos(ang- Math.PI/2)*r1;
-        const y1 = 100 + Math.sin(ang- Math.PI/2)*r1;
-        const x2 = 100 + Math.cos(ang- Math.PI/2)*r2;
-        const y2 = 100 + Math.sin(ang- Math.PI/2)*r2;
-        const ln = document.createElementNS('http://www.w3.org/2000/svg','line');
-        ln.setAttribute('x1',x1);ln.setAttribute('y1',y1);ln.setAttribute('x2',x2);ln.setAttribute('y2',y2);
-        g.appendChild(ln);
-      }
-    })();
-
-    let total = 25*60, left = total, running = false, tickT = null, audioCtx=null;
-
-    function fmt(n){ return String(n).padStart(2,'0'); }
-
-    function setFromInputs(){
-      const h = Math.max(0, parseInt(hEl.value||'0',10));
-      const m = Math.max(0, parseInt(mEl.value||'0',10));
-      const s = Math.max(0, parseInt(sEl.value||'0',10));
-      total = left = h*3600 + m*60 + s;
-      paint();
-    }
-
-    function paint(){
-      const mm = Math.floor(left/60), ss = left%60;
-      lcd.textContent = `${fmt(mm)}:${fmt(ss)}`;
-      const progress = total>0 ? (1 - left/total) : 1;
-      ring.style.strokeDashoffset = String(progress*CIRC);
-      const angle = 360*progress;
-      hand.style.transform = `rotate(${angle}deg)`;
-    }
-
-    function ensureAudio(){
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-    }
-
-    // cute repeating chime ~4s
-    function ringCute(ms=4000){
-      ensureAudio();
-      const startAt = audioCtx.currentTime;
-      const beat = 0.35;                 // 350ms per blip
-      const reps = Math.floor(ms/ (beat*1000));
-      for (let i=0;i<reps;i++){
-        const t = startAt + i*beat;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.value = 880 - (i%2)*120; // alternate pitch
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.24, t+0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t+0.25);
-        osc.connect(gain).connect(audioCtx.destination);
-        osc.start(t);
-        osc.stop(t+0.28);
-      }
-    }
-
-    function done(){
-      running = false;
-      clearInterval(tickT);
-      tickT = null;
-      left = 0; paint();
-      // Tell PET on all tabs
-      sendToPET({ type: "PET_SAY_NOW", text: "Time's up!" }, ()=>{});
-      // Play chime ~4s
-      ringCute(4000);
-    }
-
-    function start(){
-      if (left<=0) setFromInputs();
-      if (left<=0) return;
-      ensureAudio(); // user gesture – enables audio later
-      if (running) return;
-      running = true;
-      const start = Date.now();
-      let prev = start;
-      tickT = setInterval(()=>{
-        const now = Date.now();
-        if (now - prev >= 1000){
-          left = Math.max(0, left - 1);
-          paint();
-          prev = now;
-          if (left===0) done();
-        }
-      }, 200);
-    }
-
-    function pause(){ running=false; clearInterval(tickT); tickT=null; }
-    function reset(){ pause(); setFromInputs(); }
-
-    startBtn.addEventListener('click', start);
-    pauseBtn.addEventListener('click', pause);
-    resetBtn.addEventListener('click', reset);
-    p5.addEventListener('click', ()=>{ hEl.value=0; mEl.value=5; sEl.value=0; setFromInputs(); });
-    p25.addEventListener('click', ()=>{ hEl.value=0; mEl.value=25; sEl.value=0; setFromInputs(); });
-    [hEl,mEl,sEl].forEach(i=> i.addEventListener('change', setFromInputs));
-
-    // init
-    setFromInputs();
-
-    /* initial PET check */
-    window.addEventListener('DOMContentLoaded', () => {
-      if (!canUseAPI()) { say("Chrome API not available. Use Google Chrome on desktop.", false); return; }
-      sendToPET({ type: "PET_GET_LINES" }, (resp) => {
-        if (resp?.ok) {
-          linesEl.value = (resp.lines || []).join('\n');
-          say(`Connected to PET. ${resp.lines?.length || 0} custom lines loaded.`);
-        } else {
-          say("Could not connect to PET. Check manifest origins and reload the extension.", false);
-        }
-      });
-    });
-  </script>
-</body>
-</html>
+      sendToPET({ type: "PET
