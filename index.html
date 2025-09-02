@@ -349,7 +349,7 @@ Tiny step now, future you says thanks."></textarea>
       });
     });
 
-    /* ---------- Minimal timer logic ---------- */
+    /* ---------- Minimal timer logic (fixed) ---------- */
     const ticksG = document.querySelector('.ticks');
     for (let i=0;i<60;i++){
       const a = (Math.PI*2/60)*i;
@@ -378,12 +378,16 @@ Tiny step now, future you says thanks."></textarea>
     }
 
     function setFromInputs(){
-      total = left = (+hI.value*3600) + (+mI.value*60) + (+sI.value|0);
+      const h = Math.max(0, parseInt(hI.value || '0', 10) || 0);
+      const m = Math.max(0, parseInt(mI.value || '0', 10) || 0);
+      const s = Math.max(0, parseInt(sI.value || '0', 10) || 0);
+      total = left = h*3600 + m*60 + s;
       updateFace();
     }
 
     function start(){
-      if (left<=0) setFromInputs();
+      // ✅ Always use the latest numbers the user typed
+      setFromInputs();
       if (left<=0) return;
       clearInterval(timer);
       timer = setInterval(()=>{
@@ -402,6 +406,7 @@ Tiny step now, future you says thanks."></textarea>
     p5.addEventListener('click', ()=>{ hI.value=0;mI.value=5;sI.value=0; setFromInputs(); });
     p25.addEventListener('click', ()=>{ hI.value=0;mI.value=25;sI.value=0; setFromInputs(); });
 
+    // Start with whatever is in the inputs
     setFromInputs();
   </script>
 </body>
