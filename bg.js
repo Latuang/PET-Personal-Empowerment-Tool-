@@ -17,7 +17,7 @@ function scheduleAlarm(period) {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.sync.get(['periodMinutes'], (cfg) => {
+  chrome.storage.local.get(['periodMinutes'], (cfg) => {
     scheduleAlarm(cfg.periodMinutes || DEFAULT_PERIOD_MIN);
   });
 });
@@ -33,12 +33,12 @@ function broadcastSay(text) {
   if (!text) return;
   broadcastToAll({ type: 'PET_SAY', text });
   // storage echo so content scripts that miss the runtime msg still catch it
-  chrome.storage.sync.set({ petSpeakNow: { text, at: Date.now() } });
+  chrome.storage.local.set({ petSpeakNow: { text, at: Date.now() } });
 }
 
 // Keep all tabs in sync when storage changes (even if not triggered by control page)
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'sync') return;
+  if (area !== 'local') return;
   if (changes.petCustomLines) {
     const lines = Array.isArray(changes.petCustomLines.newValue)
       ? changes.petCustomLines.newValue : [];
@@ -64,12 +64,12 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
     // Save + merge custom lines, then notify every tab and optionally say the last line
     if (msg?.type === "PET_ADD_LINES" && Array.isArray(msg.lines)) {
       const cleaned = msg.lines.map(s => String(s).trim()).filter(Boolean);
-      chrome.storage.sync.get(['petCustomLines'], (cfg) => {
+      chrome.storage.local.get(['petCustomLines'], (cfg) => {
         const current = Array.isArray(cfg.petCustomLines) ? cfg.petCustomLines : [];
         const merged = Array.from(new Set([...current, ...cleaned]));
         const last   = cleaned[cleaned.length - 1] || null;
 
-        chrome.storage.sync.set({ petCustomLines: merged }, () => {
+        chrome.storage.local.set({ petCustomLines: merged }, () => {
           // Immediately push to all open tabs (no refresh needed)
           broadcastToAll({ type: 'LINES_UPDATED', lines: merged });
           if (last) broadcastSay(last);
@@ -81,7 +81,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
 
     // Ask for current list
     if (msg?.type === "PET_GET_LINES") {
-      chrome.storage.sync.get(['petCustomLines'], (cfg) => {
+      chrome.storage.local.get(['petCustomLines'], (cfg) => {
         sendResponse({ ok: true, lines: cfg.petCustomLines || [] });
       });
       return true;
@@ -97,7 +97,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
 
     // From popup: re-schedule
     if (msg?.type === "RESCHEDULE") {
-      chrome.storage.sync.get(['periodMinutes'], (cfg) => {
+      chrome.storage.local.get(['periodMinutes'], (cfg) => {
         scheduleAlarm(cfg.periodMinutes || DEFAULT_PERIOD_MIN);
         sendResponse({ ok: true });
       });
