@@ -11,14 +11,13 @@
       --paper:#ffffffee;
 
       /* soft background gradient */
-      --bg-a:#fff4ea;     /* warm peach */
-      --bg-b:#fde9f2;     /* rosy milk */
-      --bg-c:#e9fbf1;     /* mint foam */
+      --bg-a:#fff4ea;
+      --bg-b:#fde9f2;
+      --bg-c:#e9fbf1;
 
       /* brand tints */
       --peach:#ff8c7a;    /* Save */
       --teal:#3f8e7b;     /* Load */
-      --mint:#a8e4d2;
 
       --shadow: 0 18px 50px rgba(60,38,21,.12), 0 4px 16px rgba(60,38,21,.08);
       --radius: 22px;
@@ -119,23 +118,10 @@
       background:#fffbf7;
       padding:18px;
     }
-    .timer h2{
-      margin: 0 0 14px;
-      font-size: 20px;
-      display:flex; align-items:center; gap:10px;
-    }
+    .timer h2{ margin: 0 0 14px; font-size:20px; display:flex; align-items:center; gap:10px; }
+    .t-grid{ display:grid; grid-template-columns: 270px 1fr; gap:22px; align-items:center; }
 
-    .t-grid{
-      display:grid; grid-template-columns: 270px 1fr;
-      gap:22px;
-      align-items:center;
-    }
-
-    .clock{
-      width: 260px; height: 260px;
-      display:grid; place-items:center;
-      position:relative;
-    }
+    .clock{ width:260px; height:260px; display:grid; place-items:center; position:relative; }
     .clock svg{ width:100%; height:100%; }
     .ticks line{ stroke: var(--tick); stroke-width:1 }
     .ring-bg{ stroke: var(--ring); stroke-width:14; fill:none; }
@@ -144,40 +130,18 @@
     .hand{ stroke: #6b5c52; stroke-width:3; stroke-linecap:round;
            transform-origin: 50% 50%; transition: transform .25s ease; }
     .face-drop{ filter: drop-shadow(0 8px 24px rgba(0,0,0,.08)); }
+    .clock-label{ position:absolute; inset:auto 0 36px 0; display:grid; place-items:center; font-weight:700; letter-spacing:.5px; color:#2b2118; font-size:28px; }
 
-    .clock-label{
-      position:absolute; inset:auto 0 36px 0; display:grid; place-items:center;
-      font-weight:700; letter-spacing:.5px; color:#2b2118;
-      font-size: 28px;
-    }
-
-    .inputs{
-      display:grid; grid-template-columns: repeat(3, minmax(120px, 1fr));
-      gap:14px; align-self:start;
-    }
-    .ibox{
-      border:1px solid #e8d9cc; border-radius:14px; background:#fff;
-      padding:10px 12px;
-    }
+    .inputs{ display:grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap:14px; align-self:start; }
+    .ibox{ border:1px solid #e8d9cc; border-radius:14px; background:#fff; padding:10px 12px; }
     .ibox label{ display:block; font-size:12px; color:#6b5c52; margin-bottom:6px }
-    .ibox input{
-      width:100%; font: 600 20px/1.2 ui-sans-serif, system-ui; text-align:center;
-      border:0; outline:0; background:transparent; color:#2b2118;
-    }
+    .ibox input{ width:100%; font: 600 20px/1.2 ui-sans-serif, system-ui; text-align:center; border:0; outline:0; background:transparent; color:#2b2118; }
 
-    .actions{
-      margin-top: 16px;
-      display:flex; gap:12px; justify-content:flex-end; flex-wrap:wrap;
-    }
-    .pill{
-      border-radius: 14px; padding:10px 14px; background:#fff; border:1px solid #e8d9cc;
-      font-weight:600; cursor:pointer;
-      box-shadow: 0 3px 10px rgba(0,0,0,.04);
-      transition: background .2s, transform .06s;
-    }
+    .actions{ margin-top:16px; display:flex; gap:12px; justify-content:flex-end; flex-wrap:wrap; }
+    .pill{ border-radius:14px; padding:10px 14px; background:#fff; border:1px solid #e8d9cc; font-weight:600; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,.04); transition: background .2s, transform .06s; }
     .pill:active{ transform: translateY(1px) }
-    .pill.peachish{ background: #ffe9e3 }
-    .pill.mintish{ background: #e8f7f1 }
+    .pill.peachish{ background:#ffe9e3 }
+    .pill.mintish{ background:#e8f7f1 }
 
     @media (max-width:900px){
       .t-grid{ grid-template-columns: 1fr; }
@@ -291,7 +255,7 @@ Tiny step now, future you says thanks."></textarea>
     })();
 
     /* ---------- PET wiring ---------- */
-    const EXT_ID = "YOUR_EXTENSION_ID_HERE"; // <— replace with your real extension ID
+    const EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd"; // your extension id
     const statusEl = document.getElementById('status');
     const linesEl  = document.getElementById('lines');
     const saveBtn  = document.getElementById('save');
@@ -354,7 +318,7 @@ Tiny step now, future you says thanks."></textarea>
 
         if (!(resp && resp.ok)) { say("PET error: " + (resp?.error || "Unknown"), false); return; }
 
-        // Have PET speak the last line now (content script shows it)
+        // Have PET speak the last line now
         sendToPET({ type: "PET_SAY_NOW", text: sayNow }, (r2) => {
           if (r2?.ok) { say(`Saved & said: “${sayNow}”`); confetti(); }
           else { say("Saved, but could not trigger speech.", false); }
@@ -385,7 +349,7 @@ Tiny step now, future you says thanks."></textarea>
       });
     });
 
-    /* ---------- Minimal timer logic to match the UI ---------- */
+    /* ---------- Minimal timer logic ---------- */
     const ticksG = document.querySelector('.ticks');
     for (let i=0;i<60;i++){
       const a = (Math.PI*2/60)*i;
