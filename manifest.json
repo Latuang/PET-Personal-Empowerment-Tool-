@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "PET — Personal Encouragement Thing",
-  "version": "0.2.8",
-  "description": "A tiny floating buddy that shows motivational text bubbles.",
+  "name": "PET — Personal Encouragement Tool",
+  "version": "0.2.9",
+  "description": "A tiny floating pet that cheers you on",
   "icons": { "16": "icon128.png", "128": "icon128.png" },
 
   "action": { "default_popup": "popup.html" },
 
-  "permissions": ["storage", "alarms", "notifications", "tabs"],
+  "permissions": ["storage", "alarms", "tabs"],
   "host_permissions": ["http://*/*", "https://*/*"],
 
   "background": { "service_worker": "bg.js" },
@@ -21,8 +21,6 @@
       "all_frames": true
     }
   ],
-
-  /* IMPORTANT: expose the assets folder so the avatar image loads */
   "web_accessible_resources": [
     { "resources": ["assets/*"], "matches": ["http://*/*", "https://*/*"] }
   ],
