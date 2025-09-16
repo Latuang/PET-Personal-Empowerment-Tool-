@@ -7,10 +7,10 @@ chrome.storage.local.get(['periodMinutes'], (cfg) => {
   if (periodEl && cfg.periodMinutes) periodEl.value = cfg.periodMinutes;
 });
 
-// Save settings
+// Save settings & reschedule the alarm
 if (saveBtn) {
   saveBtn.addEventListener('click', () => {
-    const period = Math.max(5, parseInt(periodEl?.value || '45', 10));
+    const period = Math.max(1, parseInt(periodEl?.value || '45', 10));
     chrome.storage.local.set({ periodMinutes: period }, () => {
       chrome.runtime.sendMessage({ type: 'RESCHEDULE' });
       window.close();
