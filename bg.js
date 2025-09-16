@@ -1,9 +1,11 @@
 // ===== PET background (service worker) =====
 
-// How often to nudge by default (minutes)
 const DEFAULT_PERIOD_MIN = 45;
+const ALARM_NAME = 'pet-nudge';
+const SESSIONS_KEY = 'petSessions';   // [{ts:number(seconds), seconds:number}]
+const PERIOD_KEY   = 'periodMinutes';
 
-// Helper: send a message to all http/https tabs that have our content script
+// Broadcast a message to all http/https tabs
 function broadcastToAll(message) {
   chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }, (tabs) => {
     for (const t of tabs) if (t.id) chrome.tabs.sendMessage(t.id, message);
@@ -11,75 +13,133 @@ function broadcastToAll(message) {
 }
 
 function scheduleAlarm(period) {
-  chrome.alarms.clear('pet-nudge', () => {
-    chrome.alarms.create('pet-nudge', { periodInMinutes: period });
+  chrome.alarms.clear(ALARM_NAME, () => {
+    chrome.alarms.create(ALARM_NAME, { periodInMinutes: period });
   });
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.get(['periodMinutes'], (cfg) => {
-    scheduleAlarm(cfg.periodMinutes || DEFAULT_PERIOD_MIN);
+  chrome.storage.local.get([PERIOD_KEY], (cfg) => {
+    scheduleAlarm(cfg[PERIOD_KEY] || DEFAULT_PERIOD_MIN);
   });
 });
 
-// Alarm → nudge all tabs
+// Alarm → send a gentle nudge (PET bubble will pick a line if payload null)
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name !== 'pet-nudge') return;
+  if (alarm.name !== ALARM_NAME) return;
   broadcastToAll({ type: 'NUDGE', payload: null });
 });
 
-// Small helper to say a line now everywhere
+// Helper to say a line now in all tabs + set a small echo in storage
 function broadcastSay(text) {
   if (!text) return;
   broadcastToAll({ type: 'PET_SAY', text });
-  // storage echo so content scripts that miss the runtime msg still catch it
   chrome.storage.local.set({ petSpeakNow: { text, at: Date.now() } });
 }
 
-// Keep all tabs in sync when storage changes (even if not triggered by control page)
+// Keep tabs synced with custom lines
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes.petCustomLines) {
     const lines = Array.isArray(changes.petCustomLines.newValue)
       ? changes.petCustomLines.newValue : [];
-    // Tell every existing PET to swap to the latest lines immediately
     broadcastToAll({ type: 'LINES_UPDATED', lines });
   }
 });
 
-// External API (control panel page talks to us via extension ID)
+// ---- Stats helpers ----
+function startOfDay(tsMs) { const d = new Date(tsMs); d.setHours(0,0,0,0); return d.getTime(); }
+function dayKey(tsMs) { return new Date(startOfDay(tsMs)).toISOString().slice(0,10); }
+
+// Add a completed session (called by web UI when timer ends)
+function addSession(seconds, tsMs = Date.now(), cb) {
+  const safeSec = Math.max(1, Math.floor(seconds || 0));
+  chrome.storage.local.get([SESSIONS_KEY], (cfg) => {
+    const sessions = Array.isArray(cfg[SESSIONS_KEY]) ? cfg[SESSIONS_KEY] : [];
+    sessions.push({ ts: Math.floor(tsMs/1000), seconds: safeSec });
+    const trimmed = sessions.slice(-2000); // keep last N
+    chrome.storage.local.set({ [SESSIONS_KEY]: trimmed }, () => cb?.(trimmed));
+  });
+}
+
+function computeStats(sessions) {
+  const now = Date.now();
+  const todayStart = startOfDay(now);
+  let todaySeconds = 0;
+  const perDay = new Map();
+
+  for (const s of sessions) {
+    if (!s || typeof s.ts !== 'number' || typeof s.seconds !== 'number') continue;
+    const tsMs = s.ts * 1000;
+    const key = dayKey(tsMs);
+    perDay.set(key, (perDay.get(key) || 0) + Math.max(0, s.seconds));
+    if (tsMs >= todayStart) todaySeconds += Math.max(0, s.seconds);
+  }
+
+  // last 7 days series (oldest → newest)
+  const weekly = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(todayStart - i*24*3600*1000);
+    const key = d.toISOString().slice(0,10);
+    weekly.push({ date: key, seconds: perDay.get(key) || 0 });
+  }
+
+  // streaks
+  const worked = new Set([...perDay.keys()]);
+  let currentStreak = 0, longestStreak = 0;
+  let cursor = todayStart;
+  while (worked.has(dayKey(cursor))) { currentStreak++; cursor -= 24*3600*1000; }
+  if (worked.size) {
+    const all = [...worked].sort();
+    let run = 0;
+    const first = new Date(all[0] + 'T00:00:00Z').getTime();
+    const last  = new Date(all[all.length-1] + 'T00:00:00Z').getTime();
+    for (let t=first; t<=last + 24*3600*1000; t+=24*3600*1000) {
+      if (worked.has(dayKey(t))) { run++; longestStreak = Math.max(longestStreak, run); }
+      else run = 0;
+    }
+  }
+
+  const totalFocusSecondsAll = sessions.reduce((a,b)=>a + (b?.seconds||0), 0);
+  return { todaySeconds, weekly, currentStreak, longestStreak, totalFocusSecondsAll };
+}
+
+// popup asks to reschedule after saving frequency locally
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg?.type === 'RESCHEDULE') {
+    chrome.storage.local.get([PERIOD_KEY], (cfg) => {
+      scheduleAlarm(cfg[PERIOD_KEY] || DEFAULT_PERIOD_MIN);
+      sendResponse({ ok: true });
+    });
+    return true;
+  }
+});
+
+// ---- External API used by your index.html page ----
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   try {
-    // Only allow from your control panel host(s)
     const origin = sender?.origin || (sender?.url ? new URL(sender.url).origin : "");
-    const allowed = new Set([
-      "https://latuang.github.io",
-      "https://latuang.github.io"
-    ]);
+    const allowed = new Set(["https://latuang.github.io", "http://localhost:3000"]);
     if (![...allowed].some(a => origin.startsWith(a))) {
       sendResponse({ ok: false, error: "Origin not allowed", got: origin });
       return;
     }
 
-    // Save + merge custom lines, then notify every tab and optionally say the last line
     if (msg?.type === "PET_ADD_LINES" && Array.isArray(msg.lines)) {
       const cleaned = msg.lines.map(s => String(s).trim()).filter(Boolean);
       chrome.storage.local.get(['petCustomLines'], (cfg) => {
         const current = Array.isArray(cfg.petCustomLines) ? cfg.petCustomLines : [];
         const merged = Array.from(new Set([...current, ...cleaned]));
         const last   = cleaned[cleaned.length - 1] || null;
-
         chrome.storage.local.set({ petCustomLines: merged }, () => {
-          // Immediately push to all open tabs (no refresh needed)
           broadcastToAll({ type: 'LINES_UPDATED', lines: merged });
           if (last) broadcastSay(last);
           sendResponse({ ok: true, count: merged.length, said: last || null });
         });
       });
-      return true; // async
+      return true;
     }
 
-    // Ask for current list
     if (msg?.type === "PET_GET_LINES") {
       chrome.storage.local.get(['petCustomLines'], (cfg) => {
         sendResponse({ ok: true, lines: cfg.petCustomLines || [] });
@@ -87,7 +147,6 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       return true;
     }
 
-    // Force a “say now” for all tabs
     if (msg?.type === "PET_SAY_NOW" && typeof msg.text === "string" && msg.text.trim()) {
       const text = msg.text.trim();
       broadcastSay(text);
@@ -95,10 +154,40 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       return true;
     }
 
-    // From popup: re-schedule
+    if (msg?.type === "SET_PERIOD" && Number.isFinite(+msg.minutes)) {
+      const minutes = Math.max(1, Math.floor(+msg.minutes));
+      chrome.storage.local.set({ [PERIOD_KEY]: minutes }, () => {
+        scheduleAlarm(minutes);
+        sendResponse({ ok: true, minutes });
+      });
+      return true;
+    }
+
+    if (msg?.type === "GET_SETTINGS") {
+      chrome.storage.local.get([PERIOD_KEY], (cfg) => {
+        sendResponse({ ok: true, minutes: cfg[PERIOD_KEY] || DEFAULT_PERIOD_MIN });
+      });
+      return true;
+    }
+
+    if (msg?.type === "LOG_SESSION" && Number.isFinite(+msg.seconds)) {
+      const seconds = Math.max(1, Math.floor(+msg.seconds));
+      const tsMs = Number.isFinite(+msg.tsMs) ? +msg.tsMs : Date.now();
+      addSession(seconds, tsMs, () => sendResponse({ ok: true }));
+      return true;
+    }
+
+    if (msg?.type === "GET_STATS") {
+      chrome.storage.local.get([SESSIONS_KEY], (cfg) => {
+        const sessions = Array.isArray(cfg[SESSIONS_KEY]) ? cfg[SESSIONS_KEY] : [];
+        sendResponse({ ok: true, stats: computeStats(sessions) });
+      });
+      return true;
+    }
+
     if (msg?.type === "RESCHEDULE") {
-      chrome.storage.local.get(['periodMinutes'], (cfg) => {
-        scheduleAlarm(cfg.periodMinutes || DEFAULT_PERIOD_MIN);
+      chrome.storage.local.get([PERIOD_KEY], (cfg) => {
+        scheduleAlarm(cfg[PERIOD_KEY] || DEFAULT_PERIOD_MIN);
         sendResponse({ ok: true });
       });
       return true;
