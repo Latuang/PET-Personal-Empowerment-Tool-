@@ -4,455 +4,388 @@
   <meta charset="utf-8" />
   <title>PET Control Panel</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-
   <style>
     :root{
-      --ink:#2b2118;
-      --paper:#ffffffee;
+      /* soft palette (same background vibe) */
+      --bg-a:#fff4ea; --bg-b:#fde9f2; --bg-c:#e9fbf1;
 
-      /* soft background gradient */
-      --bg-a:#fff4ea;
-      --bg-b:#fde9f2;
-      --bg-c:#e9fbf1;
+      --ink:#2b2723;
+      --ink-soft:#7b716a;
 
-      /* brand tints */
-      --peach:#ff8c7a;    /* Save */
-      --teal:#3f8e7b;     /* Load */
+      /* gentle, not bold */
+      --line:#d9cdc5;         /* card outline */
+      --line-strong:#cdbfb6;  /* inner elements */
+      --accent:#2f8d7c;       /* small accents */
+      --accent-soft:#e8f3f0;
+      --peach:#ffa191;
+      --mint:#6cc7b3;
+      --honey:#ffd674;
 
-      --shadow: 0 18px 50px rgba(60,38,21,.12), 0 4px 16px rgba(60,38,21,.08);
-      --radius: 22px;
-
-      /* timer colors */
-      --ring: #e9dcd2;
-      --ring-active: #3f8e7b;
-      --tick:#d9cfc7;
+      --radius:14px;
+      --shadow:0 10px 26px rgba(40,26,16,.10), 0 2px 10px rgba(40,26,16,.06);
     }
 
     html,body{height:100%}
     body{
       margin:0; color:var(--ink);
-      font:16px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: linear-gradient(180deg, var(--bg-a), var(--bg-b) 40%, var(--bg-c) 100%);
+      font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: linear-gradient(180deg, var(--bg-a), var(--bg-b) 45%, var(--bg-c) 100%);
+      -webkit-font-smoothing:antialiased;
       overflow-x:hidden;
     }
 
-    canvas#bg{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.75 }
-
+    /* frame */
     .wrap{
-      position:relative; z-index:1;
-      max-width: 980px;
-      margin: clamp(18px, 6vh, 56px) auto;
-      padding: clamp(18px, 3.8vw, 28px);
-      border-radius: var(--radius);
-      background: var(--paper);
-      backdrop-filter: blur(6px);
+      max-width: 1000px;
+      margin: clamp(16px, 4vh, 28px) auto;
+      padding: 14px;
+      background:#fffdfb;
+      border: 1.5px solid var(--line);
+      border-radius: 18px;
       box-shadow: var(--shadow);
+      display:grid; gap:12px;
     }
 
-    .header{ display:flex; align-items:center; gap:14px; margin:0 0 8px; }
-    h1{ margin:0; font-size: clamp(22px, 2.6vw, 32px); letter-spacing:.2px; }
-    .sub{ color:#6b5c52; margin:0 0 14px; }
+    /* header — compact */
+    .top{
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+    }
+    .title{
+      display:flex; align-items:center; gap:8px;
+    }
+    .title h1{
+      margin:0; font-weight:700;
+      font-size: clamp(18px, 2.1vw, 22px);
+      letter-spacing:.2px;
+    }
+    .subtitle{ margin:2px 0 0; color:var(--ink-soft); font-size:12.5px }
 
+    .toolbar{
+      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    }
+    .chip{
+      display:flex; align-items:center; gap:6px;
+      padding:8px 10px; border-radius:999px;
+      background:#fff; border:1.5px solid var(--line);
+      box-shadow: 0 2px 8px rgba(0,0,0,.05);
+      font-weight:600;
+    }
+    .chip input{
+      width:58px; border:1px solid var(--line-strong);
+      border-radius:8px; padding:6px 6px; text-align:center;
+      font:600 13px/1 system-ui; outline:none; background:#fff;
+    }
+    .btn{
+      appearance:none; border:1.5px solid var(--line-strong);
+      background: linear-gradient(#ffffff, #faf7f4);
+      padding:8px 12px; border-radius:999px; cursor:pointer;
+      font-weight:700; color:#245e54;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    .btn:active{ transform: translateY(1px); }
+
+    /* 2 columns, everything fits without scrolling on common laptop sizes */
+    .grid{
+      display:grid; gap:12px;
+      grid-template-columns: 1.05fr .95fr;
+      min-height:0;
+    }
+    @media (max-width: 920px){ .grid{ grid-template-columns:1fr; } }
+
+    .card{
+      background:#fffaf6;
+      border:1.5px solid var(--line);
+      border-radius: var(--radius);
+      padding:12px;
+      min-height:0; display:grid; gap:8px;
+    }
+    .card h2{ margin:0; font-size:15px; display:flex; align-items:center; gap:6px; }
+
+    /* pep lines */
     .field{
-      margin-top: 12px;
-      border-radius: 16px;
-      border:1px solid #e8d9cc;
-      background:#fffdfb;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
-      overflow:hidden;
+      border:1.5px solid var(--line-strong); background:#fff; border-radius:12px;
+      overflow:hidden; box-shadow: inset 0 1px 0 rgba(0,0,0,.04);
     }
     textarea{
-      display:block;
-      width:100%;
-      min-height: 240px;
-      padding:14px 14px 16px;
-      border:0; outline:0;
-      box-sizing:border-box;
-      font: 15px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
-      background:transparent; color:var(--ink);
+      width:100%; min-height:138px; max-height:190px; resize:vertical;
+      border:0; outline:0; padding:10px 12px 12px;
+      background:#fff; color:var(--ink);
+      font: 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
     }
+    .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .btn.peach{ color:#6b2b24; background:linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#ffb6a9,#ffc6c6) border-box; border:1.5px solid transparent; }
+    .btn.mint{ color:#20584d; background:linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#b8ece2,#c7f2eb) border-box; border:1.5px solid transparent; }
+    .status{ margin-left:auto; color:#b22626; font-size:12px }
 
-    .row{ display:flex; flex-wrap:wrap; gap:12px; margin-top:14px; }
-
-    .btn{
-      --bg:#2b2118; --txt:#fff;
-      appearance:none; border:0; cursor:pointer;
-      padding:12px 16px; border-radius:14px;
-      color:var(--txt); font-weight:650; letter-spacing:.15px;
-      background: radial-gradient(120% 140% at 10% 10%, color-mix(in oklab, var(--bg), black 7%) 0 25%, var(--bg) 26% 100%);
-      position:relative; transform: translateZ(0);
-      transition: transform .06s ease, filter .25s ease, box-shadow .25s ease;
-      box-shadow: 0 6px 18px rgba(43,33,24,.18), inset 0 1px 0 rgba(255,255,255,.2);
-      overflow:hidden;
-    }
-    .btn:hover{
-      filter: brightness(1.06);
-      box-shadow: 0 10px 28px rgba(43,33,24,.25), 0 0 24px 6px color-mix(in oklab, var(--bg), white 75%);
-    }
-    .btn:active{ transform: translateY(1px) scale(.99); }
-    .btn.peach{ --bg: var(--peach); }
-    .btn.teal { --bg: var(--teal); }
-
-    .btn .r{ position:absolute; width:8px;height:8px;border-radius:999px;
-      background:#fff8; transform: translate(-50%,-50%) scale(0);
-      animation: ripple .6s ease-out; pointer-events:none; }
-    @keyframes ripple{ to { transform: translate(-50%,-50%) scale(22); opacity:0 } }
-
-    .hint{ font-size:13px; color:#6b5c52; margin-top:10px;}
-    .ok { color:#0f7d4c; }
-    .err{ color:#b00020; }
-
-    .badges{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; align-items:center; }
-    .chip{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 10px; background:#fff8f1; border:1px solid #f2decf;
-      color:#5c4a3c; border-radius: 999px; font-size:12px;
-    }
-    .dot{ width:10px;height:10px;border-radius:50%; background:#ffb39f; box-shadow:0 0 10px #ffb39f; }
-    .dot.mint{ background:#a8e4d2; box-shadow:0 0 10px #a8e4d2; }
-
+    /* compact digital timer (no ring) */
     .timer{
-      margin-top: 18px;
-      border:1px solid #f0e4d9;
-      border-radius: 18px;
-      background:#fffbf7;
-      padding:18px;
+      display:grid; gap:10px; grid-template-rows: auto auto auto;
+      background:#fffaf6;
+      border:1.5px solid var(--line);
+      border-radius: var(--radius);
+      padding:12px;
     }
-    .timer h2{ margin: 0 0 14px; font-size:20px; display:flex; align-items:center; gap:10px; }
-    .t-grid{ display:grid; grid-template-columns: 270px 1fr; gap:22px; align-items:center; }
-
-    .clock{ width:260px; height:260px; display:grid; place-items:center; position:relative; }
-    .clock svg{ width:100%; height:100%; }
-    .ticks line{ stroke: var(--tick); stroke-width:1 }
-    .ring-bg{ stroke: var(--ring); stroke-width:14; fill:none; }
-    .ring{ stroke: var(--ring-active); stroke-width:14; fill:none; stroke-linecap:round;
-           transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset .25s ease; }
-    .hand{ stroke: #6b5c52; stroke-width:3; stroke-linecap:round;
-           transform-origin: 50% 50%; transition: transform .25s ease; }
-    .face-drop{ filter: drop-shadow(0 8px 24px rgba(0,0,0,.08)); }
-    .clock-label{ position:absolute; inset:auto 0 36px 0; display:grid; place-items:center; font-weight:700; letter-spacing:.5px; color:#2b2118; font-size:28px; }
-
-    .inputs{ display:grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap:14px; align-self:start; }
-    .ibox{ border:1px solid #e8d9cc; border-radius:14px; background:#fff; padding:10px 12px; }
-    .ibox label{ display:block; font-size:12px; color:#6b5c52; margin-bottom:6px }
-    .ibox input{ width:100%; font: 600 20px/1.2 ui-sans-serif, system-ui; text-align:center; border:0; outline:0; background:transparent; color:#2b2118; }
-
-    .actions{ margin-top:16px; display:flex; gap:12px; justify-content:flex-end; flex-wrap:wrap; }
-    .pill{ border-radius:14px; padding:10px 14px; background:#fff; border:1px solid #e8d9cc; font-weight:600; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,.04); transition: background .2s, transform .06s; }
-    .pill:active{ transform: translateY(1px) }
-    .pill.peachish{ background:#ffe9e3 }
-    .pill.mintish{ background:#e8f7f1 }
-
-    @media (max-width:900px){
-      .t-grid{ grid-template-columns: 1fr; }
-      .clock{ margin: 0 auto }
-      .actions{ justify-content:flex-start }
+    .lcd{
+      margin:2px auto 4px;
+      border:1.5px solid var(--line-strong);
+      background: linear-gradient(180deg,#fff7c5,#ffe38c);
+      color:#1e1a14;
+      font: 800 26px/1 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: 1.5px; padding:10px 12px 8px; border-radius:10px;
+      min-width:140px; text-align:center;
+      box-shadow: inset 0 1px 0 #fffbe0, inset 0 -2px 0 #e7c86a;
     }
+    .actions{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+    .pill{
+      padding:8px 10px; border-radius:10px; border:1.5px solid var(--line-strong);
+      background:#fff; cursor:pointer; font-weight:700; box-shadow:0 1px 6px rgba(0,0,0,.06);
+    }
+    .pill.start{ background:#e7faf4; color:#24695d }
+    .pill.pause{ background:#fff0ed; color:#7a3c34 }
+    .pill.reset{ background:#fff8df; color:#6d5a23 }
+    .inputs{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .ibox{ background:#fff; border:1.5px solid var(--line-strong); border-radius:10px; padding:6px; text-align:center; }
+    .ibox label{ display:block; font-size:11px; color:var(--ink-soft); }
+    .ibox input{ width:100%; border:0; outline:0; background:transparent; font:700 16px/1 system-ui; color:#333; text-align:center; }
+
+    /* Progress Pawprint — compact, draggable chart */
+    .paw{ background:#fffaf6; border:1.5px solid var(--line); border-radius: var(--radius); padding:12px; display:grid; gap:10px; }
+    .paw h2{ margin:0; font-size:15px }
+    .kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+    .kpi{ background:#fff; border:1.5px solid var(--line-strong); border-radius:10px; padding:8px; text-align:center; }
+    .kpi strong{ font-size:14px }
+    .kpi small{ display:block; font-size:11px; color:var(--ink-soft) }
+
+    /* draggable/pannable chart */
+    .chartShell{ border:1.5px solid var(--line-strong); border-radius:10px; background:#fff; padding:8px; }
+    .chartViewport{
+      overflow:hidden; position:relative; height:94px; cursor:grab; user-select:none;
+      background:linear-gradient(180deg,#fff, #fff), repeating-linear-gradient(90deg, transparent 0 32px, #f6f3f1 32px 33px);
+      border-radius:8px; border:1px dashed #eadfd8;
+    }
+    .chartViewport:active{ cursor:grabbing; }
+    .bars{ position:absolute; left:0; top:6px; height:82px; display:flex; gap:8px; padding:0 8px; }
+    .bar{ width:18px; background: var(--accent-soft); border:1.5px solid #cfe5df; border-radius:6px; position:relative; overflow:hidden; }
+    .bar > span{ position:absolute; bottom:0; left:0; right:0; height:0%; background: var(--accent); border-radius:6px; }
+    .barLabel{ position:absolute; bottom:-18px; left:50%; transform:translateX(-50%); font-size:10px; color:#8a8078; white-space:nowrap; }
+
+    /* layout specifics */
+    .left{ display:grid; gap:12px; grid-template-rows: auto 1fr; }
+    .right{ display:grid; gap:12px; grid-template-rows: auto 1fr; }
+
   </style>
 </head>
 <body>
-  <canvas id="bg" aria-hidden="true"></canvas>
-
-  <main class="wrap" role="main">
-    <div class="header">
-      <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M6 7h12M6 12h9M6 17h6" stroke="#2b2118" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      <div>
-        <h1>Welcome to PET Control Panel</h1>
-        <p class="sub">PET aka Personal Empowerment Tool will cheer you on across your tabs.</p>
-        <p class="sub">Instruction: Add pep lines below for your PET. One line per row.</p>
-      </div>
-    </div>
-
-    <div class="field">
-      <textarea id="lines" placeholder="E.g.
-Drink water. Breathe. Send that message.
-Tiny step now, future you says thanks."></textarea>
-    </div>
-
-    <div class="row">
-      <button id="save" class="btn peach">Save to PET ✨</button>
-      <button id="load" class="btn teal">Load from PET 🍃</button>
-    </div>
-
-    <section class="timer" aria-label="Timer">
-      <h2>⏲️ Timer</h2>
-      <div class="t-grid">
-        <div class="clock" aria-live="polite">
-          <svg viewBox="0 0 200 200" class="face-drop">
-            <g class="ticks"></g>
-            <circle class="ring-bg" cx="100" cy="100" r="78"/>
-            <circle class="ring" id="ring" cx="100" cy="100" r="78" stroke-dasharray="490" stroke-dashoffset="0"/>
-            <line class="hand" id="hand" x1="100" y1="100" x2="100" y2="36"/>
-          </svg>
-          <div class="clock-label" id="lcd">00:00</div>
-        </div>
-
+  <main class="wrap">
+    <div class="top">
+      <div class="title">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12M6 12h9M6 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <div>
-          <div class="inputs">
-            <div class="ibox"><label>Hours</label>   <input id="h" type="number" min="0" value="0"></div>
-            <div class="ibox"><label>Minutes</label> <input id="m" type="number" min="0" value="25"></div>
-            <div class="ibox"><label>Seconds</label> <input id="s" type="number" min="0" value="0"></div>
-          </div>
-
-          <div class="actions">
-            <button class="pill peachish" id="start">Start</button>
-            <button class="pill mintish" id="pause">Pause</button>
-            <button class="pill" id="reset">Reset</button>
-            <button class="pill" id="p5">5 min</button>
-            <button class="pill" id="p25">25 min</button>
-          </div>
+          <h1>PET Control Panel</h1>
+          <div class="subtitle">Personal Empowerment Tool</div>
         </div>
       </div>
-    </section>
+      <div class="toolbar">
+        <div class="chip">Talk every
+          <input id="freq" type="number" min="1" value="45" aria-label="Talk frequency (minutes)"/>
+          min
+        </div>
+        <button id="freqSave" class="btn">Save</button>
+      </div>
+    </div>
 
-    <div id="status" class="hint" role="status" aria-live="polite"></div>
+    <div class="grid">
+      <div class="left">
+        <!-- Pep Lines -->
+        <section class="card">
+          <h2>💬 Pep Lines</h2>
+          <div class="field">
+            <textarea id="lines" placeholder="One line per row&#10;e.g. Tiny step now—future you says thanks."></textarea>
+          </div>
+          <div class="row">
+            <button id="save" class="btn peach">Save to PET ✨</button>
+            <button id="load" class="btn mint">Load from PET 🍃</button>
+            <div id="status" class="status" role="status" aria-live="polite"></div>
+          </div>
+        </section>
 
-    <div class="badges">
-      <span class="chip"><span class="dot"></span> Works in Google Chrome (desktop)</span>
-      <span class="chip"><span class="dot mint"></span> Requires PET extension installed</span>
+        <!-- Progress Pawprint -->
+        <section class="paw" aria-label="Progress">
+          <h2>🐾 Progress Pawprint</h2>
+          <div class="kpis">
+            <div class="kpi"><strong id="kpiToday">0m</strong><small>Today</small></div>
+            <div class="kpi"><strong id="kpiWeek">0m</strong><small>Last 7 days</small></div>
+            <div class="kpi"><strong id="kpiStreak">0</strong><small>Current Streak</small></div>
+            <div class="kpi"><strong id="kpiLongest">0</strong><small>Longest</small></div>
+          </div>
+          <div class="chartShell">
+            <div class="chartViewport" id="chartViewport" title="Drag to pan">
+              <div class="bars" id="barsTrack"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right: compact digital timer -->
+      <div class="right">
+        <section class="timer" aria-label="Timer">
+          <h2>⏲️ Focus Timer</h2>
+          <div class="lcd" id="lcd">25:00</div>
+          <div class="actions">
+            <button class="pill start" id="start">Start</button>
+            <button class="pill pause" id="pause">Pause</button>
+            <button class="pill reset" id="reset">Reset</button>
+            <button class="pill" id="p5">5m</button>
+            <button class="pill" id="p25">25m</button>
+          </div>
+          <div class="inputs">
+            <div class="ibox"><label>Hours</label>  <input id="h" type="number" min="0" value="0"></div>
+            <div class="ibox"><label>Minutes</label><input id="m" type="number" min="0" value="25"></div>
+            <div class="ibox"><label>Seconds</label><input id="s" type="number" min="0" value="0"></div>
+          </div>
+        </section>
+      </div>
     </div>
   </main>
 
   <script>
-    /* ---------- Subtle background blobs ---------- */
-    const c = document.getElementById('bg');
-    const ctx = c.getContext('2d');
-    let W, H, blobs;
-
-    function resetBG(){
-      W = c.width  = innerWidth * devicePixelRatio;
-      H = c.height = innerHeight* devicePixelRatio;
-      ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-      blobs = Array.from({length: 9}, (_,i)=>({
-        x: Math.random()*innerWidth,
-        y: Math.random()*innerHeight,
-        r: 120 + Math.random()*160,
-        hue: [22,340,160][i%3], alpha: .16 + Math.random()*.12,
-        vx: (Math.random()-.5)*0.15, vy: (Math.random()-.5)*0.15
-      }));
-    }
-    resetBG(); addEventListener('resize', resetBG);
-    let mx = innerWidth/2, my = innerHeight/2;
-    addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
-
-    (function bgTick(){
-      ctx.clearRect(0,0,innerWidth,innerHeight);
-      blobs.forEach(b=>{
-        b.x += b.vx; b.y += b.vy;
-        if (b.x<-b.r) b.x=innerWidth+b.r;
-        if (b.x>innerWidth+b.r) b.x=-b.r;
-        if (b.y<-b.r) b.y=innerHeight+b.r;
-        if (b.y>innerHeight+b.r) b.y=-b.r;
-        b.x += (mx-b.x)*0.0015; b.y += (my-b.y)*0.0015;
-        const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
-        g.addColorStop(0, `hsla(${b.hue} 92% 75% / ${b.alpha})`);
-        g.addColorStop(1, `hsla(${b.hue} 92% 75% / 0)`);
-        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill();
-      });
-      requestAnimationFrame(bgTick);
-    })();
-
-    /* ---------- PET wiring ---------- */
+    /* ===== messaging to your extension (unchanged endpoints) ===== */
     const EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd"; // your extension id
+    const canUseAPI = () => typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.sendMessage === "function";
+    function sendToPET(payload, cb){
+      if(!canUseAPI()){ say("Chrome API not available. Use Google Chrome on desktop.", false); cb?.(null); return; }
+      try{ chrome.runtime.sendMessage(EXT_ID, payload, (resp)=>{ if(chrome.runtime.lastError){ say("Could not reach PET: "+chrome.runtime.lastError.message, false); cb?.(null); return; } cb?.(resp); }); }
+      catch(e){ say("Could not reach PET: "+(e?.message||e), false); cb?.(null); }
+    }
+
+    /* ===== Pep lines ===== */
     const statusEl = document.getElementById('status');
-    const linesEl  = document.getElementById('lines');
-    const saveBtn  = document.getElementById('save');
-    const loadBtn  = document.getElementById('load');
+    const say = (txt, ok=true)=>{ statusEl.textContent = txt; statusEl.style.color = ok ? '#0f7d4c' : '#b00020'; };
 
-    const canUseAPI = () =>
-      typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.sendMessage === "function";
-
-    const say = (txt, ok=true)=>{ statusEl.textContent = txt; statusEl.className = "hint " + (ok? "ok":"err"); };
-    const getLines = () => linesEl.value.split('\n').map(s => s.trim()).filter(Boolean);
-
-    function sendToPET(payload, cb) {
-      if (!canUseAPI()) { say("Chrome API not available. Use Google Chrome on desktop.", false); cb?.(null); return; }
-      try {
-        chrome.runtime.sendMessage(EXT_ID, payload, (resp) => {
-          if (chrome.runtime.lastError) { say("Could not reach PET (check Extension ID & permissions): " + chrome.runtime.lastError.message, false); cb?.(null); return; }
-          cb?.(resp);
-        });
-      } catch (e) {
-        say("Could not reach PET: " + (e?.message || e), false);
-        cb?.(null);
-      }
-    }
-
-    function ripple(e){
-      const r=document.createElement('span'); r.className='r'; e.currentTarget.appendChild(r);
-      r.style.left = e.offsetX+'px'; r.style.top = e.offsetY+'px';
-      r.addEventListener('animationend', ()=>r.remove());
-    }
-    [saveBtn, loadBtn].forEach(b=>b.addEventListener('click', ripple));
-
-    function confetti(){
-      const N=28;
-      for(let i=0;i<N;i++){
-        const s=document.createElement('div');
-        const size = 6+Math.random()*8;
-        s.textContent = ['✨','🐶','🌟','💖','🍀'][i%5];
-        s.style.position='fixed'; s.style.zIndex=9999;
-        s.style.left=(Math.random()*100)+'vw'; s.style.top='-10vh';
-        s.style.fontSize=size+'px'; s.style.transition='transform 1.2s ease-out, opacity 1.2s ease-out';
-        document.body.appendChild(s);
-        requestAnimationFrame(()=>{
-          s.style.transform=`translateY(${110+Math.random()*20}vh) rotate(${(Math.random()-.5)*360}deg)`;
-          s.style.opacity='0';
-        });
-        setTimeout(()=>s.remove(),1300);
-      }
-    }
-
-    // ------- SAVE to PET -------
-    saveBtn.addEventListener('click', () => {
-      const lines = getLines();
-      if (!lines.length) { say("Add at least one line.", false); return; }
-      const sayNow = lines[lines.length - 1];
-
-      saveBtn.disabled = true; saveBtn.classList.add('is-sending');
-
-      sendToPET({ type: "PET_ADD_LINES", lines }, (resp) => {
-        saveBtn.disabled = false; saveBtn.classList.remove('is-sending');
-
-        if (!(resp && resp.ok)) { say("PET error: " + (resp?.error || "Unknown"), false); return; }
-
-        // Have PET speak the last line now
-        sendToPET({ type: "PET_SAY_NOW", text: sayNow }, (r2) => {
-          if (r2?.ok) { say(`Saved & said: “${sayNow}”`); confetti(); }
-          else { say("Saved, but could not trigger speech.", false); }
-        });
+    document.getElementById('save').addEventListener('click', ()=>{
+      const lines = document.getElementById('lines').value.split('\n').map(s=>s.trim()).filter(Boolean);
+      if(!lines.length) return say("Add at least one line.", false);
+      const last = lines[lines.length-1];
+      sendToPET({ type:"PET_ADD_LINES", lines }, (r)=> {
+        if(!r?.ok) return say("PET error: "+(r?.error||"Unknown"), false);
+        sendToPET({ type:"PET_SAY_NOW", text:last }); say(`Saved & said: “${last}”`);
+      });
+    });
+    document.getElementById('load').addEventListener('click', ()=>{
+      sendToPET({ type:"PET_GET_LINES" }, (r)=>{
+        if(!r?.ok) return say("PET error: "+(r?.error||"Unknown"), false);
+        document.getElementById('lines').value = (r.lines||[]).join('\n');
+        say(`Loaded ${r.lines?.length||0} lines from PET.`);
       });
     });
 
-    // ------- LOAD from PET -------
-    loadBtn.addEventListener('click', () => {
-      loadBtn.disabled = true; loadBtn.classList.add('is-sending');
-      sendToPET({ type: "PET_GET_LINES" }, (resp) => {
-        loadBtn.disabled = false; loadBtn.classList.remove('is-sending');
-        if (resp?.ok) {
-          linesEl.value = (resp.lines || []).join('\n');
-          say(`Loaded ${resp.lines?.length || 0} lines from PET.`);
-        } else {
-          say("PET error: " + (resp?.error || "Unknown"), false);
-        }
+    /* ===== Frequency controls ===== */
+    const freqInput=document.getElementById('freq'), freqSave=document.getElementById('freqSave');
+    function initFrequency(){
+      sendToPET({ type:"GET_SETTINGS" }, (r)=>{ if(r?.ok) freqInput.value = r.minutes; });
+      freqSave.addEventListener('click', ()=>{
+        const minutes = Math.max(1, parseInt(freqInput.value||'45',10));
+        sendToPET({ type:"SET_PERIOD", minutes }, (r)=>{ say(r?.ok ? `Talk every ${minutes} min saved.` : "Could not save frequency", !!r?.ok); });
       });
-    });
-
-    // Keep textarea BLANK on load; just verify we can talk to the extension
-    window.addEventListener('DOMContentLoaded', () => {
-      if (!canUseAPI()) { say("Chrome API not available. Use Google Chrome on desktop.", false); return; }
-      sendToPET({ type: "PET_GET_LINES" }, (resp) => {
-        if (resp?.ok) say("Connected to PET. Click “Load from PET 🍃” to import your saved lines.");
-        else say("Could not connect to PET. Check manifest 'externally_connectable' & Extension ID.", false);
-      });
-    });
-
-    /* ---------- Minimal timer logic (fixed + chime + PET “Time’s up”) ---------- */
-    const ticksG = document.querySelector('.ticks');
-    for (let i=0;i<60;i++){
-      const a = (Math.PI*2/60)*i;
-      const r1 = 90, r2 = (i%5===0)?96:94;
-      const x1 = 100 + Math.cos(a)*r1, y1 = 100 + Math.sin(a)*r1;
-      const x2 = 100 + Math.cos(a)*r2, y2 = 100 + Math.sin(a)*r2;
-      const L = document.createElementNS('http://www.w3.org/2000/svg','line');
-      L.setAttribute('x1',x1); L.setAttribute('y1',y1); L.setAttribute('x2',x2); L.setAttribute('y2',y2);
-      ticksG.appendChild(L);
     }
 
+    /* ===== Timer (digital) ===== */
+    const lcd = document.getElementById('lcd');
     const hI=document.getElementById('h'), mI=document.getElementById('m'), sI=document.getElementById('s');
     const startBtn=document.getElementById('start'), pauseBtn=document.getElementById('pause'), resetBtn=document.getElementById('reset');
     const p5=document.getElementById('p5'), p25=document.getElementById('p25');
-    const hand=document.getElementById('hand'), ring=document.getElementById('ring'), lcd=document.getElementById('lcd');
 
-    let total=0, left=0, timer=null;
-
-    function updateFace(){
-      const mins = Math.floor(left/60), secs = left%60;
-      lcd.textContent = String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0');
-      const frac = total? (left/total):0;
-      ring.style.strokeDashoffset = (1-frac)*490;
-      const angle = -90 + (1-frac)*360;
-      hand.style.transform = `rotate(${angle}deg)`;
-    }
-
-    function setFromInputs(){
-      const h = Math.max(0, parseInt(hI.value || '0', 10) || 0);
-      const m = Math.max(0, parseInt(mI.value || '0', 10) || 0);
-      const s = Math.max(0, parseInt(sI.value || '0', 10) || 0);
-      total = left = h*3600 + m*60 + s;
-      updateFace();
-    }
-
-    // --- simple 4s chime using Web Audio (no external files) ---
-    let audioCtx = null;
-    function ensureAudio(){
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-    }
+    let total=0,left=0,timer=null,audioCtx=null;
+    function updateLCD(){ const mins=Math.floor(left/60), secs=left%60; lcd.textContent = String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0'); }
+    function setFromInputs(){ const h=+hI.value||0, m=+mI.value||0, s=+sI.value||0; total=left=h*3600+m*60+s; updateLCD(); }
+    function ensureAudio(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }
     function playChime(){
-      ensureAudio();
-      const ctx = audioCtx;
-      const now = ctx.currentTime;
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.connect(ctx.destination);
-
-      // Arpeggiated pleasant triad over ~4s
-      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
-      const per = 0.5; // 0.5s per note × 8 = 4s
-      for (let i=0;i<8;i++){
-        const osc = ctx.createOscillator();
-        const f = notes[i % notes.length];
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(f, now + i*per);
-        osc.connect(gain);
-        // envelope
-        gain.gain.linearRampToValueAtTime(0.25, now + i*per + 0.06);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + (i+1)*per);
-        osc.start(now + i*per);
-        osc.stop(now + (i+1)*per);
-      }
+      ensureAudio(); const ctx=audioCtx, now=ctx.currentTime, g=ctx.createGain(); g.gain.setValueAtTime(.001,now); g.connect(ctx.destination);
+      [523.25,659.25,783.99,1046.5].forEach((f,i)=>{const o=ctx.createOscillator();o.type='sine';o.frequency.setValueAtTime(f,now+i*.45);o.connect(g);
+        g.gain.linearRampToValueAtTime(.22,now+i*.45+.05); g.gain.exponentialRampToValueAtTime(.001,now+(i+1)*.45); o.start(now+i*.45); o.stop(now+(i+1)*.45);});
     }
-
     function onTimerDone(){
-      // Tell PET to speak
-      sendToPET({ type: "PET_SAY_NOW", text: "Time’s up! Nice work." });
-      // Play chime for ~4s
+      sendToPET({ type:"PET_SAY_NOW", text:"Time’s up! Nice work." });
+      if(total>0) sendToPET({ type:"LOG_SESSION", seconds: total, tsMs: Date.now() }, ()=> refreshStats());
       playChime();
     }
-
-    function start(){
-      // Always use the latest numbers the user typed
-      setFromInputs();
-      if (left<=0) return;
-      clearInterval(timer);
-      timer = setInterval(()=>{
-        left = Math.max(0, left-1);
-        updateFace();
-        if (left===0){
-          clearInterval(timer);
-          onTimerDone();
-        }
-      },1000);
-      // unlock audio context on user gesture (some browsers require)
-      ensureAudio();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+    function start(){ setFromInputs(); if(left<=0) return; clearInterval(timer);
+      timer=setInterval(()=>{ left=Math.max(0,left-1); updateLCD(); if(left===0){ clearInterval(timer); onTimerDone(); } },1000);
+      ensureAudio(); if(audioCtx.state==='suspended') audioCtx.resume();
     }
-
     function pause(){ clearInterval(timer); }
     function reset(){ pause(); setFromInputs(); }
-
-    startBtn.addEventListener('click', start);
-    pauseBtn.addEventListener('click', pause);
-    resetBtn.addEventListener('click', reset);
-    p5.addEventListener('click', ()=>{ hI.value=0;mI.value=5;sI.value=0; setFromInputs(); });
-    p25.addEventListener('click', ()=>{ hI.value=0;mI.value=25;sI.value=0; setFromInputs(); });
-
-    // Start with whatever is in the inputs
+    startBtn.onclick=start; pauseBtn.onclick=pause; resetBtn.onclick=reset;
+    p5.onclick=()=>{ hI.value=0; mI.value=5; sI.value=0; setFromInputs(); }
+    p25.onclick=()=>{ hI.value=0; mI.value=25; sI.value=0; setFromInputs(); }
     setFromInputs();
+
+    /* ===== Progress Pawprint (movable chart) ===== */
+    const kToday=document.getElementById('kpiToday');
+    const kWeek=document.getElementById('kpiWeek');
+    const kStreak=document.getElementById('kpiStreak');
+    const kLongest=document.getElementById('kpiLongest');
+    const barsTrack=document.getElementById('barsTrack');
+    const viewport=document.getElementById('chartViewport');
+
+    function fmt(mins){ return mins>=60 ? (mins/60).toFixed(1)+'h' : Math.round(mins)+'m'; }
+
+    // drag-to-pan
+    (function enablePan(vp){
+      let isDown=false, startX=0, startScroll=0;
+      vp.addEventListener('mousedown', (e)=>{ isDown=true; startX=e.clientX; startScroll=vp.scrollLeft; e.preventDefault(); });
+      window.addEventListener('mousemove', (e)=>{ if(!isDown) return; vp.scrollLeft = startScroll + (startX - e.clientX); });
+      window.addEventListener('mouseup', ()=> isDown=false);
+      // allow track to be wider than viewport and use native scroll
+      vp.style.overflowX='auto'; vp.scrollTop=0;
+    })(viewport);
+
+    function renderBars(series){ // series = [{date, seconds}]
+      barsTrack.innerHTML='';
+      // make a longer, pannable track: duplicate to 14 days window
+      const days = [...series];
+      const max = Math.max(1, ...days.map(d=>d.seconds));
+      const pad = 7; // add extra days (oldest earlier) to allow panning feel
+      for(let i=0;i<pad;i++) days.unshift({date:'', seconds:0});
+      for(let d of days){
+        const bar=document.createElement('div'); bar.className='bar';
+        const inner=document.createElement('span'); inner.style.height = (d.seconds/max*100)+'%';
+        bar.appendChild(inner);
+        const label=document.createElement('div'); label.className='barLabel';
+        if(d.date){ label.textContent = new Date(d.date+'T00:00:00Z').toLocaleDateString(undefined,{weekday:'short'}); }
+        bar.appendChild(label);
+        barsTrack.appendChild(bar);
+      }
+      // widen track based on count
+      barsTrack.style.width = (days.length*26 + 16) + 'px';
+    }
+
+    function refreshStats(){
+      sendToPET({ type:"GET_STATS" }, (resp)=>{
+        if(!resp?.ok){
+          // show pleasant defaults if not connected
+          const today=0, weekly = Array.from({length:7}, (_,i)=>({date:new Date(Date.now()- (6-i)*86400000).toISOString().slice(0,10), seconds: 0}));
+          kToday.textContent = fmt(today/60); kWeek.textContent = fmt(0); kStreak.textContent='0'; kLongest.textContent='0'; renderBars(weekly);
+          return;
+        }
+        const st = resp.stats;
+        const weekTotalSec = st.weekly.reduce((a,b)=>a+b.seconds,0);
+        kToday.textContent = fmt(st.todaySeconds/60);
+        kWeek.textContent  = fmt(weekTotalSec/60);
+        kStreak.textContent = st.currentStreak;
+        kLongest.textContent = st.longestStreak;
+        renderBars(st.weekly);
+      });
+    }
+
+    /* ===== boot ===== */
+    window.addEventListener('DOMContentLoaded', ()=>{
+      initFrequency();
+      refreshStats();
+      // greet
+      if(!canUseAPI()) say("Chrome API not available. Use Google Chrome on desktop.", false);
+      else sendToPET({ type:"PET_GET_LINES" }, (r)=>{ if(r?.ok) say("Connected. Load or add lines."); });
+    });
   </script>
 </body>
 </html>
