@@ -1,5 +1,5 @@
-// Only inject in the top frame (avoid ads/iframes)
-if (window.top !== window) { /* do nothing in iframes */ } else (function install() {
+// Inject only in top frame
+if (window.top !== window) { /* skip iframes */ } else (function install() {
   if (document.documentElement.dataset.petInstalled === "1") return;
   document.documentElement.dataset.petInstalled = "1";
 
@@ -60,7 +60,7 @@ if (window.top !== window) { /* do nothing in iframes */ } else (function instal
     bubble.classList.add('show');
     bubble.classList.remove('fadeout');
     const msPerChar = 55;
-    const dur = Math.max(2500, Math.min(8000, text.length * msPerChar));
+    const dur = Math.max(2200, Math.min(7000, text.length * msPerChar));
     clearTimeout(hideTimer);
     hideTimer = setTimeout(() => {
       bubble.classList.add('fadeout');
@@ -68,6 +68,7 @@ if (window.top !== window) { /* do nothing in iframes */ } else (function instal
     }, dur);
   }
 
+  // Drag & click
   (function enableDrag(handle, container) {
     const DRAG_THRESHOLD = 4;
     let dragging = false, down = false;
@@ -105,12 +106,14 @@ if (window.top !== window) { /* do nothing in iframes */ } else (function instal
     handle.addEventListener('click', (e) => { if (!dragging) { e.stopPropagation(); showBubble(randomLine()); } });
   })(avatar, root);
 
+  // Messages from BG
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type === 'NUDGE') showBubble(msg.payload || randomLine());
     else if (msg?.type === 'PET_SAY' && typeof msg.text === 'string') showBubble(msg.text);
     else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) customLines = msg.lines;
   });
 
+  // Storage echoes (for “say now”)
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     if (changes.petCustomLines) customLines = Array.isArray(changes.petCustomLines.newValue) ? changes.petCustomLines.newValue : [];
