@@ -1,54 +1,32 @@
-/* Keep PET above everything and clickable */
+/* PET bubble + avatar — compact & cute */
 #pet-root { position: fixed; bottom: 16px; right: 16px; z-index: 2147483647; }
 #pet-root, #pet-root * { pointer-events: auto; }
 #pet-root { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
 
-/* Bubble should not eat clicks; clicks go to the avatar */
-#pet-root .pet-bubble { pointer-events: none; }
-
-/* 🐶 widget layout */
-.pet-wrap {
-  position: relative;
-  display: block;
-  user-select: none;
-  --avatar: 72px;
-  --gap: 10px;
-  --mouth-y: 22px;   /* adjust if the tail pointer misses the mouth */
-}
+.pet-wrap { position: relative; display: block; user-select: none; --avatar: 68px; --gap: 10px; --mouth-y: 22px; }
 
 .pet-avatar {
-  width: var(--avatar);
-  height: var(--avatar);
+  width: var(--avatar); height: var(--avatar);
   background: center / contain no-repeat;
-  cursor: grab;
-  will-change: transform;
-  animation: petFloat 4s ease-in-out infinite;
+  cursor: grab; will-change: transform; animation: petFloat 4s ease-in-out infinite;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,.18));
 }
 @keyframes petFloat { 0%{transform:translateY(0)} 50%{transform:translateY(-6px)} 100%{transform:translateY(0)} }
 
-/* Speech bubble */
 .pet-bubble {
-  position: absolute;
-  max-width: min(32ch, calc(100vw - 160px));
-  min-width: 16ch;
-  background: #fff; color:#000;
-  border: 1px solid rgba(0,0,0,.14);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.14);
-  padding: 10px 14px;
-  font-size: clamp(13px, 0.95rem, 15px);
-  line-height: 1.35;
-  text-wrap: pretty; overflow-wrap: break-word; hyphens: auto;
-  opacity: 0; transform: translateY(4px) scale(.98);
-  transition: opacity .22s, transform .22s;
+  position: absolute; max-width: min(30ch, calc(100vw - 160px)); min-width: 14ch;
+  background: #fff; color:#2b2118; border: 1px solid rgba(0,0,0,.12);
+  border-radius: 14px; box-shadow: 0 12px 28px rgba(0,0,0,.14);
+  padding: 10px 12px; font-size: 14px; line-height: 1.33;
+  text-wrap: pretty; overflow-wrap: break-word; hyphens: auto; pointer-events: none;
+  opacity: 0; transform: translateY(4px) scale(.98); transition: opacity .22s, transform .22s;
 }
 .pet-bubble.show   { opacity: 1; transform: translateY(0) scale(1); }
 .pet-bubble.fadeout{ opacity: 0; transform: translateY(4px) scale(.98); }
 
 .pet-bubble.right { left: calc(var(--avatar) + var(--gap)); }
 .pet-bubble.right::before, .pet-bubble.right::after {
-  content:""; position:absolute;
-  top: var(--tail-y, 22px); left:-10px;
+  content:""; position:absolute; top: var(--tail-y, 22px); left:-10px;
   border-top:8px solid transparent; border-bottom:8px solid transparent;
 }
 .pet-bubble.right::before { border-right:10px solid #fff; }
@@ -56,10 +34,11 @@
 
 .pet-bubble.left { right: calc(var(--avatar) + var(--gap)); }
 .pet-bubble.left::before, .pet-bubble.left::after {
-  content:""; position:absolute;
-  top: var(--tail-y, 22px); right:-10px;
+  content:""; position:absolute; top: var(--tail-y, 22px); right:-10px;
   border-top:8px solid transparent; border-bottom:8px solid transparent;
 }
 .pet-bubble.left::before  { border-left:10px solid #fff; }
 .pet-bubble.left::after   { right:-11px; border-left:11px solid rgba(0,0,0,.14); filter: blur(.2px); }
 
+/* Keep from eating clicks; avatar is the click target */
+#pet-root .pet-bubble { pointer-events: none; }
