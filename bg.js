@@ -5,6 +5,10 @@ const ALARM_NAME = 'pet-nudge';
 const SESSIONS_KEY = 'petSessions';   // [{ts:number(seconds), seconds:number}]
 const PERIOD_KEY   = 'periodMinutes';
 
+// NEW: avatar storage keys
+const AVATAR_DATA_KEY = 'petAvatarDataUrl'; // transparent data URL
+const AVATAR_NAME_KEY = 'petAvatarName';
+
 // Broadcast a message to all http/https tabs
 function broadcastToAll(message) {
   chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }, (tabs) => {
@@ -181,6 +185,23 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       chrome.storage.local.get([SESSIONS_KEY], (cfg) => {
         const sessions = Array.isArray(cfg[SESSIONS_KEY]) ? cfg[SESSIONS_KEY] : [];
         sendResponse({ ok: true, stats: computeStats(sessions) });
+      });
+      return true;
+    }
+
+    // NEW: set/get avatar from the Control Panel
+    if (msg?.type === "SET_PET_IMAGE" && typeof msg.dataUrl === "string" && msg.dataUrl.startsWith("data:image/png")) {
+      const name = typeof msg.name === 'string' ? msg.name : 'custom';
+      chrome.storage.local.set({ [AVATAR_DATA_KEY]: msg.dataUrl, [AVATAR_NAME_KEY]: name }, () => {
+        broadcastToAll({ type: 'PET_AVATAR_UPDATED' });
+        sendResponse({ ok: true });
+      });
+      return true;
+    }
+
+    if (msg?.type === "GET_PET_IMAGE") {
+      chrome.storage.local.get([AVATAR_DATA_KEY, AVATAR_NAME_KEY], (cfg) => {
+        sendResponse({ ok: true, name: cfg[AVATAR_NAME_KEY] || null, dataUrl: cfg[AVATAR_DATA_KEY] || null });
       });
       return true;
     }
