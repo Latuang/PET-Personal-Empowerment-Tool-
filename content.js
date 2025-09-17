@@ -9,9 +9,7 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
 
   root.innerHTML = `
     <div class="pet-wrap">
-      <div class="pet-avatar" id="pet-avatar"
-           style="background-image:url(${chrome.runtime.getURL('assets/pet.png')});"
-           title="Drag or click me"></div>
+      <div class="pet-avatar" id="pet-avatar" title="Drag or click me"></div>
       <div class="pet-bubble right" id="pet-bubble" role="status" aria-live="polite">
         <div id="pet-text">Hi! I’m PET. Need a nudge?</div>
       </div>
@@ -52,6 +50,21 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
     const pool = [...DEFAULTS, ...customLines];
     return pool[Math.floor(Math.random() * pool.length)] || "You’ve got this.";
   };
+
+  // === NEW: load the current avatar data URL (transparent)
+  function applyAvatarFromStorage() {
+    chrome.storage.local.get(['petAvatarDataUrl'], (cfg) => {
+      const dataUrl = cfg.petAvatarDataUrl || null;
+      if (dataUrl) {
+        avatar.style.backgroundImage = `url("${dataUrl}")`;
+      } else {
+        // fallback: simple emoji pet
+        const svg = encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><text x='50%' y='58%' dominant-baseline='middle' text-anchor='middle' font-size='64'>🐶</text></svg>`);
+        avatar.style.backgroundImage = `url("data:image/svg+xml;charset=utf-8,${svg}")`;
+      }
+    });
+  }
+  applyAvatarFromStorage();
 
   let hideTimer = null;
   function showBubble(text) {
@@ -111,6 +124,7 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
     if (msg?.type === 'NUDGE') showBubble(msg.payload || randomLine());
     else if (msg?.type === 'PET_SAY' && typeof msg.text === 'string') showBubble(msg.text);
     else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) customLines = msg.lines;
+    else if (msg?.type === 'PET_AVATAR_UPDATED') applyAvatarFromStorage(); // NEW
   });
 
   // Storage echoes (for “say now”)
@@ -122,6 +136,9 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
       if (v && typeof v.text === 'string' && typeof v.at === 'number') {
         if (Date.now() - v.at < 10_000) showBubble(v.text);
       }
+    }
+    if (changes.petAvatarDataUrl) { // NEW: instant update
+      applyAvatarFromStorage();
     }
   });
 
