@@ -8,34 +8,13 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
   document.documentElement.appendChild(root);
 
   const DEFAULT_AVATAR = 'brown_dog_nobg.png';
-
-  // Try /assets/<name> first, then <name> at the extension root.
-  function resolveAvatarURL(name, cb) {
-    const candidates = [
-      chrome.runtime.getURL('assets/' + name),
-      chrome.runtime.getURL(name),
-    ];
-    let i = 0;
-    const tryOne = () => {
-      if (i >= candidates.length) return cb(chrome.runtime.getURL('assets/' + DEFAULT_AVATAR));
-      const url = candidates[i++];
-      const img = new Image();
-      img.onload = () => cb(url);
-      img.onerror = tryOne;
-      img.src = url;
-    };
-    tryOne();
-  }
-
-  function setAvatar(name) {
-    resolveAvatarURL(name || DEFAULT_AVATAR, (url) => {
-      avatar.style.backgroundImage = `url("${url}")`;
-    });
-  }
+  const urlFor = (name) => chrome.runtime.getURL('assets/' + (name || DEFAULT_AVATAR));
 
   root.innerHTML = `
     <div class="pet-wrap">
-      <div class="pet-avatar" id="pet-avatar" title="Drag or click me"></div>
+      <div class="pet-avatar" id="pet-avatar"
+           style="background-image:url(${urlFor(DEFAULT_AVATAR)});"
+           title="Drag or click me"></div>
       <div class="pet-bubble right" id="pet-bubble" role="status" aria-live="polite">
         <div id="pet-text">Hi! I’m PET. Need a nudge?</div>
       </div>
@@ -47,30 +26,31 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
   const bubble = root.querySelector('#pet-bubble');
   const textEl = root.querySelector('#pet-text');
 
+  function setAvatar(name) { avatar.style.backgroundImage = `url(${urlFor(name)})`; }
+
   // Load saved avatar on start
   chrome.storage.local.get(['petAvatar'], (cfg) => setAvatar(cfg.petAvatar || DEFAULT_AVATAR));
 
-  // React to changes from bg or options page
+  // React to bg + storage updates
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type === 'PET_AVATAR_CHANGED' && typeof msg.name === 'string') setAvatar(msg.name);
     else if (msg?.type === 'NUDGE') showBubble(msg.payload || randomLine());
     else if (msg?.type === 'PET_SAY' && typeof msg.text === 'string') showBubble(msg.text);
     else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) customLines = msg.lines;
   });
-
-  chrome.storage.onChanged.addListener((changes, area) => {
+  chrome.storage.onChanged.addListener((ch, area) => {
     if (area !== 'local') return;
-    if (changes.petAvatar) setAvatar(changes.petAvatar.newValue || DEFAULT_AVATAR);
-    if (changes.petCustomLines) customLines = Array.isArray(changes.petCustomLines.newValue) ? changes.petCustomLines.newValue : [];
-    if (changes.petSpeakNow) {
-      const v = changes.petSpeakNow.newValue;
+    if (ch.petAvatar) setAvatar(ch.petAvatar.newValue || DEFAULT_AVATAR);
+    if (ch.petCustomLines) customLines = Array.isArray(ch.petCustomLines.newValue) ? ch.petCustomLines.newValue : [];
+    if (ch.petSpeakNow) {
+      const v = ch.petSpeakNow.newValue;
       if (v && typeof v.text === 'string' && typeof v.at === 'number') {
         if (Date.now() - v.at < 10_000) showBubble(v.text);
       }
     }
   });
 
-  // ---------- bubble + behavior ----------
+  // --- bubble render ---
   function positionBubble() {
     const rect = wrap.getBoundingClientRect();
     const spaceRight = window.innerWidth - rect.right;
