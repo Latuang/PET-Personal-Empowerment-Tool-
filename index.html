@@ -14,69 +14,76 @@
       --radius:14px; --shadow:0 10px 26px rgba(40,26,16,.10), 0 2px 10px rgba(40,26,16,.06);
     }
     html,body{height:100%}
-    body{ margin:0; color:var(--ink); font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-      background:linear-gradient(180deg,var(--bg-a),var(--bg-b) 45%,var(--bg-c) 100%); -webkit-font-smoothing:antialiased; overflow-x:hidden; }
-    .wrap{ max-width:1000px; margin:clamp(16px,4vh,28px) auto; padding:14px; background:#fffdfb;
-      border:1.5px solid var(--line); border-radius:18px; box-shadow:var(--shadow); display:grid; gap:12px; }
-    .top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
-    .title{ display:flex; align-items:center; gap:8px; }
-    .title h1{ margin:0; font-weight:700; font-size:clamp(18px,2.1vw,22px) }
-    .subtitle{ margin:2px 0 0; color:var(--ink-soft); font-size:12.5px }
-    .toolbar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-    .chip{ display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:999px; background:#fff; border:1.5px solid var(--line); box-shadow:0 2px 8px rgba(0,0,0,.05); font-weight:600; }
-    .chip input{ width:58px; border:1px solid var(--line-strong); border-radius:8px; padding:6px; text-align:center; font:600 13px/1 system-ui; background:#fff; }
-    .btn{ appearance:none; border:1.5px solid var(--line-strong); background:linear-gradient(#ffffff,#faf7f4); padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:700; color:#245e54; box-shadow:0 2px 8px rgba(0,0,0,.06); }
-    .btn:active{ transform:translateY(1px) }
-    .grid{ display:grid; gap:12px; grid-template-columns:1.05fr .95fr; min-height:0; }
-    @media (max-width:920px){ .grid{ grid-template-columns:1fr; } }
+    body{
+      margin:0; color:var(--ink);
+      font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:linear-gradient(180deg,var(--bg-a),var(--bg-b) 45%,var(--bg-c) 100%);
+      -webkit-font-smoothing:antialiased; overflow-x:hidden;
+    }
+    .wrap{max-width:1000px;margin:clamp(16px,4vh,28px) auto;padding:14px;background:#fffdfb;
+      border:1.5px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:grid;gap:12px;}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .title{display:flex;align-items:center;gap:8px}
+    .title h1{margin:0;font-weight:700;font-size:clamp(18px,2.1vw,22px)}
+    .subtitle{margin:2px 0 0;color:var(--ink-soft);font-size:12.5px}
+    .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .chip{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:#fff;
+      border:1.5px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.05);font-weight:600}
+    .chip input{width:58px;border:1.5px solid var(--line-strong);border-radius:8px;padding:6px 6px;text-align:center;font:600 13px/1 system-ui;outline:none;background:#fff}
+    .btn{appearance:none;border:1.5px solid var(--line-strong);background:linear-gradient(#ffffff,#faf7f4);
+      padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:700;color:#245e54;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .btn:active{transform:translateY(1px)}
+    .grid{display:grid;gap:12px;grid-template-columns:1.05fr .95fr;min-height:0}
+    @media (max-width:920px){.grid{grid-template-columns:1fr}}
+    .card{background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px;min-height:0;display:grid;gap:8px}
+    .card h2{margin:0;font-size:15px;display:flex;align-items:center;gap:6px}
+    .field{border:1.5px solid var(--line-strong);background:#fff;border-radius:12px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(0,0,0,.04)}
+    textarea{width:100%;min-height:138px;max-height:190px;resize:vertical;border:0;outline:0;padding:10px 12px 12px;background:#fff;color:var(--ink);
+      font:13px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .btn.peach{color:#6b2b24;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#ffb6a9,#ffc6c6) border-box;border:1.5px solid transparent}
+    .btn.mint{color:#20584d;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#b8ece2,#c7f2eb) border-box;border:1.5px solid transparent}
+    .status{margin-left:auto;color:#b22626;font-size:12px}
 
-    .card{ background:#fffaf6; border:1.5px solid var(--line); border-radius:var(--radius); padding:12px; min-height:0; display:grid; gap:8px; }
-    .card h2{ margin:0; font-size:15px; display:flex; align-items:center; gap:6px; }
-    .field{ border:1.5px solid var(--line-strong); background:#fff; border-radius:12px; overflow:hidden; box-shadow:inset 0 1px 0 rgba(0,0,0,.04); }
-    textarea{ width:100%; min-height:138px; max-height:190px; resize:vertical; border:0; outline:0; padding:10px 12px 12px; background:#fff; color:var(--ink); font:13px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace; }
-    .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .btn.peach{ color:#6b2b24; background:linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#ffb6a9,#ffc6c6) border-box; border:1.5px solid transparent; }
-    .btn.mint{ color:#20584d; background:linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#b8ece2,#c7f2eb) border-box; border:1.5px solid transparent; }
-    .status{ margin-left:auto; color:#0f7d4c; font-size:12px }
+    /* Timer */
+    .timer{display:grid;gap:10px;background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px}
+    .lcd{margin:2px auto 4px;border:1.5px solid var(--line-strong);background:linear-gradient(180deg,#fff7c5,#ffe38c);
+      color:#1e1a14;font:800 26px/1 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;letter-spacing:1.5px;
+      padding:10px 12px 8px;border-radius:10px;min-width:140px;text-align:center;box-shadow:inset 0 1px 0 #fffbe0,inset 0 -2px 0 #e7c86a}
+    .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+    .pill{padding:8px 10px;border-radius:10px;border:1.5px solid var(--line-strong);background:#fff;cursor:pointer;font-weight:700;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+    .pill.start{background:#e7faf4;color:#24695d}.pill.pause{background:#fff0ed;color:#7a3c34}.pill.reset{background:#fff8df;color:#6d5a23}
+    .inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .ibox{background:#fff;border:1.5px solid var(--line-strong);border-radius:10px;padding:6px;text-align:center}
+    .ibox label{display:block;font-size:11px;color:var(--ink-soft)}
+    .ibox input{width:100%;border:0;outline:0;background:transparent;font:700 16px/1 system-ui;color:#333;text-align:center}
 
-    .timer{ display:grid; gap:10px; grid-template-rows:auto auto auto; background:#fffaf6; border:1.5px solid var(--line); border-radius:var(--radius); padding:12px; }
-    .lcd{ margin:2px auto 4px; border:1.5px solid var(--line-strong); background:linear-gradient(180deg,#fff7c5,#ffe38c); color:#1e1a14;
-      font:800 26px/1 "JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; letter-spacing:1.5px; padding:10px 12px 8px; border-radius:10px; min-width:140px; text-align:center;
-      box-shadow:inset 0 1px 0 #fffbe0, inset 0 -2px 0 #e7c86a; }
-    .actions{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
-    .pill{ padding:8px 10px; border-radius:10px; border:1.5px solid var(--line-strong); background:#fff; cursor:pointer; font-weight:700; box-shadow:0 1px 6px rgba(0,0,0,.06); }
-    .pill.start{ background:#e7faf4; color:#24695d } .pill.pause{ background:#fff0ed; color:#7a3c34 } .pill.reset{ background:#fff8df; color:#6d5a23 }
-    .inputs{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-    .ibox{ background:#fff; border:1.5px solid var(--line-strong); border-radius:10px; padding:6px; text-align:center; }
-    .ibox label{ display:block; font-size:11px; color:var(--ink-soft) }
-    .ibox input{ width:100%; border:0; outline:0; background:transparent; font:700 16px/1 system-ui; color:#333; text-align:center }
+    /* Progress Pawprint */
+    .paw{background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px;display:grid;gap:10px}
+    .paw h2{margin:0;font-size:15px}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+    .kpi{background:#fff;border:1.5px solid var(--line-strong);border-radius:10px;padding:8px;text-align:center}
+    .kpi strong{font-size:14px}.kpi small{display:block;font-size:11px;color:#7b716a}
+    .chartShell{border:1.5px solid var(--line-strong);border-radius:10px;background:#fff;padding:8px}
+    .chartViewport{overflow:hidden;position:relative;height:94px;cursor:grab;user-select:none;
+      background:linear-gradient(180deg,#fff,#fff),repeating-linear-gradient(90deg,transparent 0 32px,#f6f3f1 32px 33px);
+      border-radius:8px;border:1px dashed #eadfd8}
+    .chartViewport:active{cursor:grabbing}
+    .bars{position:absolute;left:0;top:6px;height:82px;display:flex;gap:8px;padding:0 8px}
+    .bar{width:18px;background:var(--accent-soft);border:1.5px solid #cfe5df;border-radius:6px;position:relative;overflow:hidden}
+    .bar>span{position:absolute;bottom:0;left:0;right:0;height:0%;background:var(--accent);border-radius:6px}
+    .barLabel{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:#8a8078;white-space:nowrap}
 
-    .paw{ background:#fffaf6; border:1.5px solid var(--line); border-radius:var(--radius); padding:12px; display:grid; gap:10px; }
-    .paw h2{ margin:0; font-size:15px }
-    .kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px }
-    .kpi{ background:#fff; border:1.5px solid var(--line-strong); border-radius:10px; padding:8px; text-align:center }
-    .kpi strong{ font-size:14px } .kpi small{ display:block; font-size:11px; color:#7b716a }
-    .chartShell{ border:1.5px solid var(--line-strong); border-radius:10px; background:#fff; padding:8px }
-    .chartViewport{ overflow:hidden; position:relative; height:94px; cursor:grab; user-select:none;
-      background:linear-gradient(180deg,#fff, #fff), repeating-linear-gradient(90deg, transparent 0 32px, #f6f3f1 32px 33px);
-      border-radius:8px; border:1px dashed #eadfd8; }
-    .chartViewport:active{ cursor:grabbing }
-    .bars{ position:absolute; left:0; top:6px; height:82px; display:flex; gap:8px; padding:0 8px }
-    .bar{ width:18px; background:var(--accent-soft); border:1.5px solid #cfe5df; border-radius:6px; position:relative; overflow:hidden }
-    .bar>span{ position:absolute; bottom:0; left:0; right:0; height:0%; background:var(--accent); border-radius:6px }
-    .barLabel{ position:absolute; bottom:-18px; left:50%; transform:translateX(-50%); font-size:10px; color:#8a8078; white-space:nowrap }
+    /* Choose Your PET — fixed 3×2 grid, bottom-right fill */
+    .pets{background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px;display:grid;gap:8px}
+    .pets h2{margin:0;font-size:15px}
+    .petGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;justify-items:stretch}
+    .petOpt{position:relative;border:1.5px solid var(--line-strong);background:#fff;border-radius:10px;padding:0;display:grid;place-items:center;cursor:pointer;transition:transform .05s;aspect-ratio:1/1;overflow:hidden}
+    .petOpt img{width:100%;height:100%;object-fit:contain;display:block;mix-blend-mode:multiply}
+    .petOpt:hover{transform:translateY(-1px)} .petOpt.active{outline:2px solid var(--accent);box-shadow:inset 0 0 0 2px #fff}
 
-    /* Choose Your PET */
-    .pets{ background:#fffaf6; border:1.5px solid var(--line); border-radius:var(--radius); padding:12px; display:grid; gap:8px }
-    .pets h2{ margin:0; font-size:15px }
-    .petGrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:8px }
-    .petOpt{ position:relative; border:1.5px solid var(--line-strong); background:#fff; border-radius:10px; padding:0; display:grid; place-items:center; cursor:pointer; transition:transform .05s; aspect-ratio:1/1; overflow:hidden }
-    .petOpt img{ width:100%; height:100%; object-fit:contain; display:block; mix-blend-mode:multiply }
-    .petOpt:hover{ transform:translateY(-1px) }
-    .petOpt.active{ outline:2px solid var(--accent); box-shadow:inset 0 0 0 2px #fff }
-
-    .left{ display:grid; gap:12px; grid-template-rows:auto 1fr }
-    .right{ display:grid; gap:12px; grid-template-rows:auto auto 1fr }
+    .left{display:grid;gap:12px;grid-template-rows:auto 1fr}
+    .right{display:grid;gap:12px;grid-template-rows:auto auto 1fr}
   </style>
 </head>
 <body>
@@ -101,7 +108,9 @@
       <div class="left">
         <section class="card">
           <h2>💬 Pep Lines</h2>
-          <div class="field"><textarea id="lines" placeholder="One line per row&#10;e.g. Tiny step now—future you says thanks."></textarea></div>
+          <div class="field">
+            <textarea id="lines" placeholder="One line per row&#10;e.g. Tiny step now—future you says thanks."></textarea>
+          </div>
           <div class="row">
             <button id="save" class="btn peach">Save to PET ✨</button>
             <button id="load" class="btn mint">Load from PET 🍃</button>
@@ -109,28 +118,32 @@
           </div>
         </section>
 
-        <section class="paw" aria-label="Progress">
+        <section class="card paw">
           <h2>🐾 Progress Pawprint</h2>
           <div class="kpis">
-            <div class="kpi"><strong id="kpiToday">0m</strong><small>Today</small></div>
-            <div class="kpi"><strong id="kpiWeek">0m</strong><small>Last 7 days</small></div>
-            <div class="kpi"><strong id="kpiStreak">0</strong><small>Current Streak</small></div>
-            <div class="kpi"><strong id="kpiLongest">0</strong><small>Longest</small></div>
+            <div class="kpi"><strong id="kToday">0m</strong><small>Today</small></div>
+            <div class="kpi"><strong id="k7">0m</strong><small>Last 7 days</small></div>
+            <div class="kpi"><strong id="kStreak">0</strong><small>Current Streak</small></div>
+            <div class="kpi"><strong id="kLongest">0</strong><small>Longest</small></div>
           </div>
-          <div class="chartShell"><div class="chartViewport" id="chartViewport" title="Drag to pan"><div class="bars" id="barsTrack"></div></div></div>
+          <div class="chartShell">
+            <div class="chartViewport" id="vp">
+              <div class="bars" id="bars"></div>
+            </div>
+          </div>
         </section>
       </div>
 
       <div class="right">
-        <section class="timer" aria-label="Timer">
-          <h2>⏲️ Focus Timer</h2>
-          <div class="lcd" id="lcd">25:00</div>
+        <section class="card timer">
+          <h2>🕹️ Focus Timer</h2>
+          <div class="lcd" id="readout">25:00</div>
           <div class="actions">
             <button class="pill start" id="start">Start</button>
             <button class="pill pause" id="pause">Pause</button>
             <button class="pill reset" id="reset">Reset</button>
-            <button class="pill" id="p5">5m</button>
-            <button class="pill" id="p25">25m</button>
+            <button class="pill" id="m5">5m</button>
+            <button class="pill" id="m25">25m</button>
           </div>
           <div class="inputs">
             <div class="ibox"><label>Hours</label><input id="h" type="number" min="0" value="0"></div>
@@ -139,155 +152,163 @@
           </div>
         </section>
 
-        <!-- Choose Your PET (5 transparent avatars) -->
-        <section class="pets">
+        <section class="card pets">
           <h2>🧸 Choose Your PET</h2>
-          <div id="petGrid" class="petGrid" role="listbox" aria-label="Choose your pet"></div>
+          <div class="petGrid" id="petGrid">
+            <!-- 3 × 2 exact grid -->
+            <button class="petOpt" data-name="icon128_fixed.png"><img alt="sausage dog" src="assets/icon128_fixed.png"></button>
+            <button class="petOpt" data-name="brown_dog_nobg.png"><img alt="brown dog" src="assets/brown_dog_nobg.png"></button>
+            <button class="petOpt" data-name="light_dog_nobg.png"><img alt="light dog" src="assets/light_dog_nobg.png"></button>
+            <button class="petOpt" data-name="orange_hams_nobg.png"><img alt="hamster" src="assets/orange_hams_nobg.png"></button>
+            <button class="petOpt" data-name="orange_cat_nobg.png"><img alt="orange cat" src="assets/orange_cat_nobg.png"></button>
+          </div>
         </section>
       </div>
     </div>
   </main>
 
   <script>
-    // host → extension bridge
-    function sendExt(msg){return new Promise(res=>chrome.runtime.sendMessage("{{EXTENSION_ID_PLACEHOLDER}}",msg,res));}
+    /* ---------- PET wiring ---------- */
+    const EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd"; // keep your extension ID
+    const statusEl = document.getElementById('status');
+    const linesEl  = document.getElementById('lines');
 
-    // Build the pet grid
-    const PETS = [
-      { name: 'brown_dog_nobg.png',  label: 'Brown Dog' },
-      { name: 'icon128_fixed.png',   label: 'Sausage Dog' }, // <- new filename
-      { name: 'light_dog_nobg.png',  label: 'Light Dog' },
-      { name: 'orange_hams_nobg.png',label: 'Hamster' },
-      { name: 'orange_cat_nobg.png', label: 'Orange Cat' }
-    ];
+    const say = (txt, ok = true) => {
+      statusEl.textContent = txt;
+      statusEl.style.color = ok ? '#0f7d4c' : '#b00020';
+    };
+    const canUseAPI = () =>
+      typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.sendMessage === "function";
 
-    const petGrid = document.getElementById('petGrid');
-    function renderPets(active){
-      petGrid.innerHTML = '';
-      PETS.forEach(p => {
-        const li = document.createElement('button');
-        li.className = 'petOpt' + (active === p.name ? ' active' : '');
-        li.setAttribute('role','option');
-        li.setAttribute('aria-label',p.label);
-        const img = document.createElement('img');
-        img.alt = p.label;
-        img.src = chrome.runtime.getURL('assets/' + p.name);
-        li.appendChild(img);
-        li.addEventListener('click', async () => {
-          await sendExt({ type:'SET_AVATAR', name:p.name });
-          renderPets(p.name);
+    function sendToPET(payload, cb){
+      if(!canUseAPI()){ say("Chrome API not available. Use Google Chrome on desktop.", false); cb?.(null); return; }
+      try{
+        chrome.runtime.sendMessage(EXT_ID, payload, (resp)=>{
+          if(chrome.runtime.lastError){ say("Could not reach PET: "+chrome.runtime.lastError.message, false); cb?.(null); return; }
+          cb?.(resp);
         });
-        petGrid.appendChild(li);
-      });
+      }catch(e){ say("Could not reach PET: "+(e?.message||e), false); cb?.(null); }
     }
 
-    // Timer + Lines + Stats (same as previous build)
-    const lcd = document.getElementById('lcd');
-    const h = document.getElementById('h'), m = document.getElementById('m'), s = document.getElementById('s');
-    const startBtn = document.getElementById('start'), pauseBtn = document.getElementById('pause'), resetBtn = document.getElementById('reset');
-    const p5 = document.getElementById('p5'), p25 = document.getElementById('p25');
+    /* ---- Pep lines ---- */
+    document.getElementById('save').onclick = () => {
+      const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
+      if(!lines.length) return say("Add at least one line.", false);
+      const last = lines[lines.length - 1];
 
-    function fmt(sec){ const mm = Math.floor(sec/60).toString().padStart(2,'0'); const ss = Math.floor(sec%60).toString().padStart(2,'0'); return `${mm}:${ss}`; }
-    function totalSec(){ return (+h.value||0)*3600 + (+m.value||0)*60 + (+s.value||0); }
-    function setSec(sec){ const hh = Math.floor(sec/3600); const mm = Math.floor((sec%3600)/60); const ss = sec%60; h.value=hh; m.value=mm; s.value=ss; lcd.textContent=fmt(mm*60+ss); }
-
-    let tick=null, remaining=25*60, running=false, lastTs=0;
-    function draw(){ lcd.textContent = fmt(remaining); }
-    function loop(ts){ if(!running){return} if(!lastTs) lastTs=ts; const dt=(ts-lastTs)/1000; lastTs=ts; if(dt>0) remaining=Math.max(0,remaining-dt); draw(); if(remaining<=0){ stop(); onFinish(); } else requestAnimationFrame(loop); }
-    function start(){ if(running) return; running=true; lastTs=0; remaining = totalSec() || remaining; requestAnimationFrame(loop); }
-    function pause(){ running=false; }
-    function stop(){ running=false; }
-    function reset(){ remaining = totalSec() || 25*60; draw(); }
-    function onFinish(){ sendExt({ type:'ADD_SESSION', seconds: totalSec() || 25*60 }).then(r=>r?.stats && updateStats(r.stats)); }
-
-    startBtn.onclick = start; pauseBtn.onclick = pause; resetBtn.onclick = reset;
-    p5.onclick = ()=>{ h.value=0; m.value=5; s.value=0; reset(); };
-    p25.onclick = ()=>{ h.value=0; m.value=25; s.value=0; reset(); };
-
-    // Pep Lines
-    const saveBtn = document.getElementById('save');
-    const loadBtn = document.getElementById('load');
-    const statusEl = document.getElementById('status');
-    const linesEl = document.getElementById('lines');
-
-    saveBtn.onclick = async () => {
-      const lines = linesEl.value.split('\n').map(x=>x.trim()).filter(Boolean);
-      const ok = await sendExt({ type:'SAVE_LINES', lines });
-      statusEl.textContent = ok?.ok ? "Saved & said: “" + (lines[0]||'') + "”" : "Could not update pet";
-      if (lines[0]) chrome.runtime.sendMessage("{{EXTENSION_ID_PLACEHOLDER}}", { type:"PET_SAY", text: lines[0] });
-    };
-    loadBtn.onclick = async () => {
-      const r = await sendExt({ type:'LOAD_LINES' });
-      linesEl.value = (r?.lines || []).join('\n');
-      statusEl.textContent = r?.ok ? "Connected. Load or add lines." : "Chrome API not available.";
+      // Use the current API: SAVE_LINES then PET_SAY_NOW
+      sendToPET({ type: "SAVE_LINES", lines }, (r)=>{
+        if(!r?.ok) { say("PET error: "+(r?.error||"Unknown"), false); return; }
+        sendToPET({ type: "PET_SAY_NOW", text: last }, (r2)=>{
+          if(r2?.ok){ say(`Saved & said: “${last}”`); sprinkleConfetti(); }
+          else { say("Saved, but could not trigger speech.", false); }
+        });
+      });
     };
 
-    // Frequency chip
-    const freq = document.getElementById('freq');
-    document.getElementById('freqSave').onclick = async () => {
-      const minutes = Math.max(1, parseInt(freq.value||'45',10));
-      await sendExt({ type:'SET_FREQUENCY', minutes });
+    document.getElementById('load').onclick = () => {
+      sendToPET({ type: "LOAD_LINES" }, (r)=>{
+        if(!r?.ok) { say("PET error: "+(r?.error||"Unknown"), false); return; }
+        linesEl.value = (r.lines||[]).join('\n');
+        say(`Loaded ${r.lines?.length||0} lines from PET.`);
+      });
     };
 
-    // Stats: KPIs + tiny draggable chart
-    const kToday = document.getElementById('kpiToday');
-    const kWeek  = document.getElementById('kpiWeek');
-    const kStreak= document.getElementById('kpiStreak');
-    const kLongest=document.getElementById('kpiLongest');
-    const barsTrack = document.getElementById('barsTrack');
-    const viewport = document.getElementById('chartViewport');
+    /* ---- Frequency ---- */
+    const freqInput = document.getElementById('freq');
+    document.getElementById('freqSave').onclick = () => {
+      const minutes = Math.max(1, Math.floor(+freqInput.value||45));
+      sendToPET({ type: "SET_FREQUENCY", minutes }, (r)=>{
+        if(r?.ok) say(`Talk every ${r.minutes} min saved.`);
+        else say("Couldn't save frequency.", false);
+      });
+    };
 
-    function updateStats(stats){
-      const min = (x)=>Math.round(x/60);
-      kToday.textContent   = min(stats.todaySeconds) + 'm';
-      const weekTotal = stats.weekly.reduce((a,b)=>a+b.seconds,0);
-      kWeek.textContent    = min(weekTotal) + 'm';
-      kStreak.textContent  = stats.currentStreak || 0;
-      kLongest.textContent = stats.longestStreak || 0;
+    /* ---- Pets (3×2 grid) ---- */
+    const petGrid = document.getElementById('petGrid');
+    function setActive(name){
+      [...petGrid.querySelectorAll('.petOpt')].forEach(b=>b.classList.toggle('active', b.dataset.name===name));
+    }
+    petGrid.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.petOpt'); if(!btn) return;
+      const name = btn.dataset.name;
+      sendToPET({ type: "SET_AVATAR", name }, (r)=>{
+        if(r?.ok) setActive(name);
+        else say("Could not update pet", false);
+      });
+    });
 
-      barsTrack.innerHTML = '';
+    /* ---- Progress Pawprint ---- */
+    function renderStats(stats){
+      // KPIs
+      const todayMin = Math.round((stats.todaySeconds||0)/60);
+      const weekMin = Math.round((stats.weekly||[]).reduce((a,b)=>a+b.seconds,0)/60);
+      document.getElementById('kToday').textContent = `${todayMin}m`;
+      document.getElementById('k7').textContent = `${weekMin}m`;
+      document.getElementById('kStreak').textContent = stats.currentStreak||0;
+      document.getElementById('kLongest').textContent = stats.longestStreak||0;
+
+      // 7-day bars
+      const barsEl = document.getElementById('bars'); barsEl.innerHTML = '';
       const max = Math.max(1, ...stats.weekly.map(d=>d.seconds));
       stats.weekly.forEach(d=>{
         const bar = document.createElement('div'); bar.className='bar';
         const fill = document.createElement('span');
-        fill.style.height = (d.seconds/max*100) + '%';
-        const lab = document.createElement('div'); lab.className='barLabel'; lab.textContent = d.date.slice(5).replace('-','/');
-        bar.appendChild(fill); bar.appendChild(lab);
-        barsTrack.appendChild(bar);
+        fill.style.height = `${Math.round((d.seconds/max)*100)}%`;
+        bar.appendChild(fill);
+        const lbl = document.createElement('div'); lbl.className='barLabel';
+        lbl.textContent = d.date.slice(5); bar.appendChild(lbl);
+        barsEl.appendChild(bar);
       });
-      barsTrack.style.width = (stats.weekly.length * 26 + 24) + 'px';
     }
 
-    // Drag to pan the chart
-    (function(){
-      let x=0, down=false, startX=0, startLeft=0;
-      const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
-      const maxLeft=()=>Math.min(0, viewport.clientWidth - barsTrack.offsetWidth - 16);
-      viewport.addEventListener('mousedown',(e)=>{down=true; startX=e.clientX; startLeft=x;});
-      window.addEventListener('mousemove',(e)=>{ if(!down) return; x = clamp(startLeft + (e.clientX-startX), maxLeft(), 0); barsTrack.style.left=x+'px'; });
-      window.addEventListener('mouseup',()=>down=false);
-    })();
-
-    // Bootstrap: load settings, stats, and current avatar to highlight
-    (async function init(){
-      // Replace placeholder with your extension id when hosting externally.
-      const extIdMeta = '{{EXTENSION_ID_PLACEHOLDER}}';
-      if (extIdMeta.includes('PLACEHOLDER')) {
-        // When served as a local file, chrome.runtime.id is your extension id.
-        const id = chrome.runtime.id;
-        document.querySelectorAll('script').forEach(s=>{
-          s.textContent = s.textContent.replaceAll('{{EXTENSION_ID_PLACEHOLDER}}', id);
+    /* ---- Confetti ---- */
+    function sprinkleConfetti(){
+      const N=24;
+      for(let i=0;i<N;i++){
+        const s=document.createElement('div');
+        const size=6+Math.random()*8;
+        s.textContent=['✨','🐶','🌟','💖','🍀'][i%5];
+        s.style.position='fixed'; s.style.zIndex=9999; s.style.left=(Math.random()*100)+'vw'; s.style.top='-10vh';
+        s.style.fontSize=size+'px'; s.style.transition='transform 1.2s ease-out, opacity 1.2s ease-out';
+        document.body.appendChild(s);
+        requestAnimationFrame(()=>{
+          s.style.transform=`translateY(${110+Math.random()*20}vh) rotate(${(Math.random()-.5)*360}deg)`;
+          s.style.opacity='0';
         });
+        setTimeout(()=>s.remove(),1300);
       }
-      const r = await sendExt({ type:'GET_SETTINGS' });
-      if (r?.ok) {
-        freq.value = r.minutes;
-        renderPets(r.avatar);
-        updateStats(r.stats);
-      } else {
-        renderPets(); // still render choices
-      }
-    })();
+    }
+
+    /* ---- Init: fetch minutes, avatar, stats ---- */
+    window.addEventListener('DOMContentLoaded', ()=>{
+      if(!canUseAPI()){ say("Chrome API not available. Use Google Chrome on desktop.", false); return; }
+      sendToPET({ type:"GET_SETTINGS" }, (r)=>{
+        if(r?.ok){
+          if(r.minutes) freqInput.value = r.minutes;
+          if(r.avatar) setActive(r.avatar);
+          if(r.stats) renderStats(r.stats);
+          say("Connected to PET.");
+        }else{
+          // Fallback probe to older API names if needed
+          sendToPET({ type:"PET_GET_LINES" }, (r2)=>{
+            say(r2?.ok ? "Connected to PET." : "Could not connect to PET.", !!r2?.ok);
+          });
+        }
+      });
+    });
+
+    /* ---- Minimal timer (local only) ---- */
+    const h=document.getElementById('h'), m=document.getElementById('m'), s=document.getElementById('s'), readout=document.getElementById('readout');
+    let t=null,total=1500,remaining=total; updateReadout();
+    function updateReadout(){ const mm=Math.floor(remaining/60), ss=remaining%60; readout.textContent=`${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`; }
+    function tick(){ if(remaining>0){ remaining--; updateReadout(); } else { clearInterval(t); t=null; sprinkleConfetti(); } }
+    function rebuild(){ const hh=Math.max(0,parseInt(h.value||'0',10)); const mm=Math.max(0,parseInt(m.value||'0',10)); const ss=Math.max(0,parseInt(s.value||'0',10)); total=hh*3600+mm*60+ss; remaining=total; updateReadout(); }
+    document.getElementById('start').onclick=()=>{ if(t) return; rebuild(); t=setInterval(tick,1000); };
+    document.getElementById('pause').onclick=()=>{ if(t){ clearInterval(t); t=null; } };
+    document.getElementById('reset').onclick=()=>{ clearInterval(t); t=null; rebuild(); };
+    document.getElementById('m5').onclick = ()=>{ h.value=0;m.value=5;s.value=0; rebuild(); };
+    document.getElementById('m25').onclick= ()=>{ h.value=0;m.value=25;s.value=0; rebuild(); };
   </script>
 </body>
 </html>
