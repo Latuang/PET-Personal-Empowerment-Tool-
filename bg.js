@@ -6,6 +6,10 @@ const SESSIONS_KEY = 'petSessions';   // [{ts:number(seconds), seconds:number}]
 const PERIOD_KEY   = 'periodMinutes';
 const AVATAR_KEY   = 'petAvatar';      // string file name under /assets
 
+// Map any old sausage-dog filename to the new one that lives in /assets
+const normalizeAvatar = (name) =>
+  name === 'icon128.png' ? 'icon128_fixed.png' : name;
+
 // Broadcast a message to all http/https tabs
 function broadcastToAll(message) {
   chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }, (tabs) => {
@@ -22,8 +26,14 @@ function scheduleAlarm(period) {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.get([PERIOD_KEY, AVATAR_KEY], (cfg) => {
     scheduleAlarm(cfg[PERIOD_KEY] || DEFAULT_PERIOD_MIN);
-    // ensure a default avatar exists
-    if (!cfg[AVATAR_KEY]) chrome.storage.local.set({ [AVATAR_KEY]: "brown_dog_nobg.png" });
+
+    // ensure a default avatar + migrate old value if needed
+    const current = normalizeAvatar(cfg[AVATAR_KEY]);
+    if (!cfg[AVATAR_KEY]) {
+      chrome.storage.local.set({ [AVATAR_KEY]: "brown_dog_nobg.png" });
+    } else if (current !== cfg[AVATAR_KEY]) {
+      chrome.storage.local.set({ [AVATAR_KEY]: current });
+    }
   });
 });
 
@@ -40,7 +50,7 @@ function broadcastSay(text) {
   chrome.storage.local.set({ petSpeakNow: { text, at: Date.now() } });
 }
 
-// Keep tabs synced with custom lines + avatar
+// Keep tabs synced with custom lines + avatar changes
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes.petCustomLines) {
@@ -49,7 +59,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     broadcastToAll({ type: 'LINES_UPDATED', lines });
   }
   if (changes[AVATAR_KEY]) {
-    const name = changes[AVATAR_KEY].newValue || "brown_dog_nobg.png";
+    const name = normalizeAvatar(changes[AVATAR_KEY].newValue) || "brown_dog_nobg.png";
     broadcastToAll({ type: 'PET_AVATAR_CHANGED', name });
   }
 });
@@ -132,54 +142,43 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       return;
     }
 
-    if (msg?.type === "PET_ADD_LINES" && Array.isArray(msg.lines)) {
-      const cleaned = msg.lines.map(s => String(s).trim()).filter(Boolean);
-      chrome.storage.local.get(['petCustomLines'], (cfg) => {
-        const current = Array.isArray(cfg.petCustomLines) ? cfg.petCustomLines : [];
-        const merged = Array.from(new Set([...current, ...cleaned]));
-        const last   = cleaned[cleaned.length - 1] || null;
-        chrome.storage.local.set({ petCustomLines: merged }, () => {
-          broadcastToAll({ type: 'LINES_UPDATED', lines: merged });
-          if (last) broadcastSay(last);
-          sendResponse({ ok: true, count: merged.length, said: last || null });
-        });
-      });
-      return true;
-    }
-
-    if (msg?.type === "PET_GET_LINES") {
-      chrome.storage.local.get(['petCustomLines'], (cfg) => {
-        sendResponse({ ok: true, lines: cfg.petCustomLines || [] });
-      });
-      return true;
-    }
-
-    if (msg?.type === "PET_SAY_NOW" && typeof msg.text === "string" && msg.text.trim()) {
-      const text = msg.text.trim();
-      broadcastSay(text);
-      sendResponse({ ok: true, said: text });
-      return true;
-    }
-
-    if (msg?.type === "SET_PERIOD" && Number.isFinite(+msg.minutes)) {
-      const minutes = Math.max(1, Math.floor(+msg.minutes));
-      chrome.storage.local.set({ [PERIOD_KEY]: minutes }, () => {
-        scheduleAlarm(minutes);
-        sendResponse({ ok: true, minutes });
-      });
-      return true;
-    }
-
-    // Return both period and avatar for the control panel
+    // GET_SETTINGS: frequency + avatar + latest stats
     if (msg?.type === "GET_SETTINGS") {
-      chrome.storage.local.get([PERIOD_KEY, AVATAR_KEY], (cfg) => {
-        sendResponse({ ok: true, minutes: cfg[PERIOD_KEY] || DEFAULT_PERIOD_MIN, avatar: cfg[AVATAR_KEY] || "brown_dog_nobg.png" });
+      chrome.storage.local.get([PERIOD_KEY, AVATAR_KEY, SESSIONS_KEY], (cfg) => {
+        const avatar = normalizeAvatar(cfg[AVATAR_KEY] || "brown_dog_nobg.png");
+        const sessions = Array.isArray(cfg[SESSIONS_KEY]) ? cfg[SESSIONS_KEY] : [];
+        const stats = computeStats(sessions);
+        sendResponse({ ok: true, minutes: cfg[PERIOD_KEY] || DEFAULT_PERIOD_MIN, avatar, stats });
+      });
+      return true;
+    }
+
+    if (msg?.type === "SET_FREQUENCY" && Number.isFinite(+msg.minutes)) {
+      const m = Math.max(1, Math.floor(+msg.minutes));
+      chrome.storage.local.set({ [PERIOD_KEY]: m }, () => {
+        scheduleAlarm(m);
+        sendResponse({ ok: true, minutes: m });
+      });
+      return true;
+    }
+
+    if (msg?.type === "SAVE_LINES" && Array.isArray(msg.lines)) {
+      chrome.storage.local.set({ petCustomLines: msg.lines }, () => {
+        broadcastToAll({ type: 'LINES_UPDATED', lines: msg.lines });
+        sendResponse({ ok: true });
+      });
+      return true;
+    }
+
+    if (msg?.type === "LOAD_LINES") {
+      chrome.storage.local.get(['petCustomLines'], (cfg) => {
+        sendResponse({ ok: true, lines: Array.isArray(cfg.petCustomLines) ? cfg.petCustomLines : [] });
       });
       return true;
     }
 
     if (msg?.type === "SET_AVATAR" && typeof msg.name === "string") {
-      const name = msg.name;
+      const name = normalizeAvatar(msg.name);
       chrome.storage.local.set({ [AVATAR_KEY]: name }, () => {
         broadcastToAll({ type: "PET_AVATAR_CHANGED", name });
         sendResponse({ ok: true, name });
@@ -187,31 +186,16 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       return true;
     }
 
-    if (msg?.type === "LOG_SESSION" && Number.isFinite(+msg.seconds)) {
-      const seconds = Math.max(1, Math.floor(+msg.seconds));
-      const tsMs = Number.isFinite(+msg.tsMs) ? +msg.tsMs : Date.now();
-      addSession(seconds, tsMs, () => sendResponse({ ok: true }));
-      return true;
-    }
-
-    if (msg?.type === "GET_STATS") {
-      chrome.storage.local.get([SESSIONS_KEY], (cfg) => {
-        const sessions = Array.isArray(cfg[SESSIONS_KEY]) ? cfg[SESSIONS_KEY] : [];
-        sendResponse({ ok: true, stats: computeStats(sessions) });
+    if (msg?.type === "ADD_SESSION" && Number.isFinite(+msg.seconds)) {
+      addSession(Math.max(1, Math.floor(+msg.seconds)), Date.now(), (sessions) => {
+        const stats = computeStats(sessions);
+        sendResponse({ ok: true, stats });
       });
       return true;
     }
 
-    if (msg?.type === "RESCHEDULE") {
-      chrome.storage.local.get([PERIOD_KEY], (cfg) => {
-        scheduleAlarm(cfg[PERIOD_KEY] || DEFAULT_PERIOD_MIN);
-        sendResponse({ ok: true });
-      });
-      return true;
-    }
-
-    sendResponse({ ok: false, error: "Unknown message type" });
+    sendResponse({ ok: false, error: "Unknown message" });
   } catch (e) {
-    sendResponse({ ok: false, error: String(e?.message || e) });
+    sendResponse({ ok: false, error: String(e) });
   }
 });
