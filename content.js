@@ -7,9 +7,14 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
   root.id = "pet-root";
   document.documentElement.appendChild(root);
 
+  function asset(name){ return chrome.runtime.getURL(`assets/${name}`); }
+  const DEFAULT_PET = "light_dog_nobg.png"; // nice neutral default
+
   root.innerHTML = `
     <div class="pet-wrap">
-      <div class="pet-avatar" id="pet-avatar" title="Drag or click me"></div>
+      <div class="pet-avatar" id="pet-avatar" title="Drag or click me">
+        <img id="pet-img" class="pet-img" alt="PET avatar"/>
+      </div>
       <div class="pet-bubble right" id="pet-bubble" role="status" aria-live="polite">
         <div id="pet-text">Hi! I’m PET. Need a nudge?</div>
       </div>
@@ -18,8 +23,16 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
 
   const wrap   = root.querySelector('.pet-wrap');
   const avatar = root.querySelector('#pet-avatar');
+  const imgEl  = root.querySelector('#pet-img');
   const bubble = root.querySelector('#pet-bubble');
   const textEl = root.querySelector('#pet-text');
+
+  function setAvatarByName(name){
+    const file = (name && typeof name === 'string') ? name : DEFAULT_PET;
+    imgEl.src = asset(file);
+  }
+  // initial avatar from storage
+  chrome.storage.local.get(['petAvatar'], (cfg) => setAvatarByName(cfg.petAvatar?.name));
 
   function positionBubble() {
     const rect = wrap.getBoundingClientRect();
@@ -50,21 +63,6 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
     const pool = [...DEFAULTS, ...customLines];
     return pool[Math.floor(Math.random() * pool.length)] || "You’ve got this.";
   };
-
-  // === NEW: load the current avatar data URL (transparent)
-  function applyAvatarFromStorage() {
-    chrome.storage.local.get(['petAvatarDataUrl'], (cfg) => {
-      const dataUrl = cfg.petAvatarDataUrl || null;
-      if (dataUrl) {
-        avatar.style.backgroundImage = `url("${dataUrl}")`;
-      } else {
-        // fallback: simple emoji pet
-        const svg = encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><text x='50%' y='58%' dominant-baseline='middle' text-anchor='middle' font-size='64'>🐶</text></svg>`);
-        avatar.style.backgroundImage = `url("data:image/svg+xml;charset=utf-8,${svg}")`;
-      }
-    });
-  }
-  applyAvatarFromStorage();
 
   let hideTimer = null;
   function showBubble(text) {
@@ -119,15 +117,15 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
     handle.addEventListener('click', (e) => { if (!dragging) { e.stopPropagation(); showBubble(randomLine()); } });
   })(avatar, root);
 
-  // Messages from BG
+  // Messages from BG (includes live avatar swap)
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type === 'NUDGE') showBubble(msg.payload || randomLine());
     else if (msg?.type === 'PET_SAY' && typeof msg.text === 'string') showBubble(msg.text);
     else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) customLines = msg.lines;
-    else if (msg?.type === 'PET_AVATAR_UPDATED') applyAvatarFromStorage(); // NEW
+    else if (msg?.type === 'AVATAR_CHANGED') setAvatarByName(msg.name);
   });
 
-  // Storage echoes (for “say now”)
+  // Storage echoes (for “say now” and avatar)
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     if (changes.petCustomLines) customLines = Array.isArray(changes.petCustomLines.newValue) ? changes.petCustomLines.newValue : [];
@@ -137,9 +135,7 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
         if (Date.now() - v.at < 10_000) showBubble(v.text);
       }
     }
-    if (changes.petAvatarDataUrl) { // NEW: instant update
-      applyAvatarFromStorage();
-    }
+    if (changes.petAvatar) setAvatarByName(changes.petAvatar.newValue?.name);
   });
 
   const mo = new MutationObserver(() => {
