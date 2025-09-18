@@ -4,9 +4,9 @@ const DEFAULT_PERIOD_MIN = 45;
 const ALARM_NAME = 'pet-nudge';
 const SESSIONS_KEY = 'petSessions';   // [{ts:number(seconds), seconds:number}]
 const PERIOD_KEY   = 'periodMinutes';
-const AVATAR_KEY   = 'petAvatar';      // { name: "light_dog_nobg.png" }
+const AVATAR_KEY   = 'petAvatar';      // string file name under /assets
 
-// Broadcast to all http/https tabs
+// Broadcast a message to all http/https tabs
 function broadcastToAll(message) {
   chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }, (tabs) => {
     for (const t of tabs) if (t.id) chrome.tabs.sendMessage(t.id, message);
@@ -20,25 +20,27 @@ function scheduleAlarm(period) {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.get([PERIOD_KEY], (cfg) => {
+  chrome.storage.local.get([PERIOD_KEY, AVATAR_KEY], (cfg) => {
     scheduleAlarm(cfg[PERIOD_KEY] || DEFAULT_PERIOD_MIN);
+    // ensure a default avatar exists
+    if (!cfg[AVATAR_KEY]) chrome.storage.local.set({ [AVATAR_KEY]: "brown_dog_nobg.png" });
   });
 });
 
-// Alarm → gentle nudge
+// Alarm → send a gentle nudge (PET bubble will pick a line if payload null)
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name !== ALARM_NAME) return;
   broadcastToAll({ type: 'NUDGE', payload: null });
 });
 
-// Speak now helper
+// Helper to say a line now in all tabs + set a small echo in storage
 function broadcastSay(text) {
   if (!text) return;
   broadcastToAll({ type: 'PET_SAY', text });
   chrome.storage.local.set({ petSpeakNow: { text, at: Date.now() } });
 }
 
-// Sync lines & avatar to all tabs
+// Keep tabs synced with custom lines + avatar
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes.petCustomLines) {
@@ -47,8 +49,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
     broadcastToAll({ type: 'LINES_UPDATED', lines });
   }
   if (changes[AVATAR_KEY]) {
-    const name = (changes[AVATAR_KEY].newValue || {}).name || null;
-    broadcastToAll({ type: 'AVATAR_CHANGED', name });
+    const name = changes[AVATAR_KEY].newValue || "brown_dog_nobg.png";
+    broadcastToAll({ type: 'PET_AVATAR_CHANGED', name });
   }
 });
 
@@ -56,12 +58,14 @@ chrome.storage.onChanged.addListener((changes, area) => {
 function startOfDay(tsMs) { const d = new Date(tsMs); d.setHours(0,0,0,0); return d.getTime(); }
 function dayKey(tsMs) { return new Date(startOfDay(tsMs)).toISOString().slice(0,10); }
 
+// Add a completed session (called by web UI when timer ends)
 function addSession(seconds, tsMs = Date.now(), cb) {
   const safeSec = Math.max(1, Math.floor(seconds || 0));
   chrome.storage.local.get([SESSIONS_KEY], (cfg) => {
     const sessions = Array.isArray(cfg[SESSIONS_KEY]) ? cfg[SESSIONS_KEY] : [];
     sessions.push({ ts: Math.floor(tsMs/1000), seconds: safeSec });
-    chrome.storage.local.set({ [SESSIONS_KEY]: sessions.slice(-2000) }, () => cb?.(sessions));
+    const trimmed = sessions.slice(-2000);
+    chrome.storage.local.set({ [SESSIONS_KEY]: trimmed }, () => cb?.(trimmed));
   });
 }
 
@@ -79,12 +83,15 @@ function computeStats(sessions) {
     if (tsMs >= todayStart) todaySeconds += Math.max(0, s.seconds);
   }
 
+  // last 7 days series (oldest → newest)
   const weekly = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(todayStart - i*24*3600*1000);
-    weekly.push({ date: d.toISOString().slice(0,10), seconds: perDay.get(d.toISOString().slice(0,10)) || 0 });
+    const key = d.toISOString().slice(0,10);
+    weekly.push({ date: key, seconds: perDay.get(key) || 0 });
   }
 
+  // streaks
   const worked = new Set([...perDay.keys()]);
   let currentStreak = 0, longestStreak = 0;
   let cursor = todayStart;
@@ -104,7 +111,7 @@ function computeStats(sessions) {
   return { todaySeconds, weekly, currentStreak, longestStreak, totalFocusSecondsAll };
 }
 
-// popup reschedule
+// popup asks to reschedule after saving frequency locally
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'RESCHEDULE') {
     chrome.storage.local.get([PERIOD_KEY], (cfg) => {
@@ -115,7 +122,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
 });
 
-// ---- External API for index.html
+// ---- External API used by your index.html page ----
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   try {
     const origin = sender?.origin || (sender?.url ? new URL(sender.url).origin : "");
@@ -163,13 +170,19 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       return true;
     }
 
+    // Return both period and avatar for the control panel
     if (msg?.type === "GET_SETTINGS") {
       chrome.storage.local.get([PERIOD_KEY, AVATAR_KEY], (cfg) => {
-        sendResponse({
-          ok: true,
-          minutes: cfg[PERIOD_KEY] || DEFAULT_PERIOD_MIN,
-          avatar: cfg[AVATAR_KEY]?.name || null
-        });
+        sendResponse({ ok: true, minutes: cfg[PERIOD_KEY] || DEFAULT_PERIOD_MIN, avatar: cfg[AVATAR_KEY] || "brown_dog_nobg.png" });
+      });
+      return true;
+    }
+
+    if (msg?.type === "SET_AVATAR" && typeof msg.name === "string") {
+      const name = msg.name;
+      chrome.storage.local.set({ [AVATAR_KEY]: name }, () => {
+        broadcastToAll({ type: "PET_AVATAR_CHANGED", name });
+        sendResponse({ ok: true, name });
       });
       return true;
     }
@@ -185,22 +198,6 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       chrome.storage.local.get([SESSIONS_KEY], (cfg) => {
         const sessions = Array.isArray(cfg[SESSIONS_KEY]) ? cfg[SESSIONS_KEY] : [];
         sendResponse({ ok: true, stats: computeStats(sessions) });
-      });
-      return true;
-    }
-
-    // NEW: avatar endpoints
-    if (msg?.type === "SET_AVATAR" && typeof msg.name === "string") {
-      const name = msg.name.trim();
-      chrome.storage.local.set({ [AVATAR_KEY]: { name } }, () => {
-        broadcastToAll({ type: 'AVATAR_CHANGED', name });
-        sendResponse({ ok: true, name });
-      });
-      return true;
-    }
-    if (msg?.type === "GET_AVATAR") {
-      chrome.storage.local.get([AVATAR_KEY], (cfg) => {
-        sendResponse({ ok: true, name: cfg[AVATAR_KEY]?.name || null });
       });
       return true;
     }
