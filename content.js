@@ -7,14 +7,15 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
   root.id = "pet-root";
   document.documentElement.appendChild(root);
 
-  function asset(name){ return chrome.runtime.getURL(`assets/${name}`); }
-  const DEFAULT_PET = "light_dog_nobg.png"; // nice neutral default
+  // default will be replaced by saved avatar right after init
+  const defaultAvatar = 'brown_dog_nobg.png';
+  const urlFor = (name) => chrome.runtime.getURL('assets/' + (name || defaultAvatar));
 
   root.innerHTML = `
     <div class="pet-wrap">
-      <div class="pet-avatar" id="pet-avatar" title="Drag or click me">
-        <img id="pet-img" class="pet-img" alt="PET avatar"/>
-      </div>
+      <div class="pet-avatar" id="pet-avatar"
+           style="background-image:url(${urlFor(defaultAvatar)});"
+           title="Drag or click me"></div>
       <div class="pet-bubble right" id="pet-bubble" role="status" aria-live="polite">
         <div id="pet-text">Hi! I’m PET. Need a nudge?</div>
       </div>
@@ -23,17 +24,37 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
 
   const wrap   = root.querySelector('.pet-wrap');
   const avatar = root.querySelector('#pet-avatar');
-  const imgEl  = root.querySelector('#pet-img');
   const bubble = root.querySelector('#pet-bubble');
   const textEl = root.querySelector('#pet-text');
 
-  function setAvatarByName(name){
-    const file = (name && typeof name === 'string') ? name : DEFAULT_PET;
-    imgEl.src = asset(file);
+  function setAvatar(name) {
+    avatar.style.backgroundImage = `url(${urlFor(name)})`;
   }
-  // initial avatar from storage
-  chrome.storage.local.get(['petAvatar'], (cfg) => setAvatarByName(cfg.petAvatar?.name));
 
+  // Load saved avatar on start
+  chrome.storage.local.get(['petAvatar'], (cfg) => setAvatar(cfg.petAvatar || defaultAvatar));
+
+  // React to changes from bg or options page
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg?.type === 'PET_AVATAR_CHANGED' && typeof msg.name === 'string') setAvatar(msg.name);
+    else if (msg?.type === 'NUDGE') showBubble(msg.payload || randomLine());
+    else if (msg?.type === 'PET_SAY' && typeof msg.text === 'string') showBubble(msg.text);
+    else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) customLines = msg.lines;
+  });
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    if (changes.petAvatar) setAvatar(changes.petAvatar.newValue || defaultAvatar);
+    if (changes.petCustomLines) customLines = Array.isArray(changes.petCustomLines.newValue) ? changes.petCustomLines.newValue : [];
+    if (changes.petSpeakNow) {
+      const v = changes.petSpeakNow.newValue;
+      if (v && typeof v.text === 'string' && typeof v.at === 'number') {
+        if (Date.now() - v.at < 10_000) showBubble(v.text);
+      }
+    }
+  });
+
+  // ---------- original behavior ----------
   function positionBubble() {
     const rect = wrap.getBoundingClientRect();
     const spaceRight = window.innerWidth - rect.right;
@@ -115,28 +136,7 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
     window.addEventListener('mousemove', onMove, { passive:true });
     window.addEventListener('mouseup', onUp, { passive:true });
     handle.addEventListener('click', (e) => { if (!dragging) { e.stopPropagation(); showBubble(randomLine()); } });
-  })(avatar, root);
-
-  // Messages from BG (includes live avatar swap)
-  chrome.runtime.onMessage.addListener((msg) => {
-    if (msg?.type === 'NUDGE') showBubble(msg.payload || randomLine());
-    else if (msg?.type === 'PET_SAY' && typeof msg.text === 'string') showBubble(msg.text);
-    else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) customLines = msg.lines;
-    else if (msg?.type === 'AVATAR_CHANGED') setAvatarByName(msg.name);
-  });
-
-  // Storage echoes (for “say now” and avatar)
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local') return;
-    if (changes.petCustomLines) customLines = Array.isArray(changes.petCustomLines.newValue) ? changes.petCustomLines.newValue : [];
-    if (changes.petSpeakNow) {
-      const v = changes.petSpeakNow.newValue;
-      if (v && typeof v.text === 'string' && typeof v.at === 'number') {
-        if (Date.now() - v.at < 10_000) showBubble(v.text);
-      }
-    }
-    if (changes.petAvatar) setAvatarByName(changes.petAvatar.newValue?.name);
-  });
+  })(root.querySelector('#pet-avatar'), root);
 
   const mo = new MutationObserver(() => {
     if (!document.getElementById('pet-root')) {
