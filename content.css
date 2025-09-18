@@ -7,7 +7,7 @@
 
 .pet-avatar {
   width: var(--avatar); height: var(--avatar);
-  background: center / contain no-repeat; /* <- ensures the PNG shows */
+  background: center / contain no-repeat;
   cursor: grab; will-change: transform; animation: petFloat 4s ease-in-out infinite;
   filter: drop-shadow(0 6px 18px rgba(0,0,0,.18));
 }
