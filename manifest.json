@@ -1,14 +1,13 @@
 {
   "manifest_version": 3,
   "name": "PET — Personal Encouragement Tool",
-  "version": "0.2.9",
+  "version": "0.3.7",
   "description": "A tiny floating pet that cheers you on",
   "icons": { "16": "icon128.png", "128": "icon128.png" },
 
   "action": { "default_popup": "popup.html" },
 
   "permissions": ["storage", "alarms", "tabs"],
-  "host_permissions": ["http://*/*", "https://*/*"],
 
   "background": { "service_worker": "bg.js" },
 
@@ -21,14 +20,17 @@
       "all_frames": true
     }
   ],
+
   "web_accessible_resources": [
-    { "resources": ["assets/*"], "matches": ["http://*/*", "https://*/*"] }
+    {
+      "resources": ["assets/*"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
   ],
 
   "externally_connectable": {
     "matches": [
       "https://latuang.github.io/*",
-      "https://latuang.github.io/PET-Personal-Empowerment-Tool-/*",
       "http://localhost:3000/*"
     ]
   }
