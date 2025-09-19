@@ -14,244 +14,373 @@
       --radius:14px; --shadow:0 10px 26px rgba(40,26,16,.10), 0 2px 10px rgba(40,26,16,.06);
     }
     html,body{height:100%}
-    body{ margin:0; color:var(--ink);
-      font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      background: linear-gradient(180deg, var(--bg-a), var(--bg-b) 45%, var(--bg-c) 100%); -webkit-font-smoothing:antialiased; overflow-x:hidden;}
-    .wrap{ max-width: 1000px; margin: clamp(16px,4vh,28px) auto; padding:14px; background:#fffdfb;
-      border:1.5px solid var(--line); border-radius:18px; box-shadow:var(--shadow); display:grid; gap:12px;}
-    .top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
-    .title{ display:flex; align-items:center; gap:8px; }
-    .title h1{ margin:0; font-weight:700; font-size: clamp(18px,2.1vw,22px); letter-spacing:.2px; }
-    .subtitle{ margin:2px 0 0; color:var(--ink-soft); font-size:12.5px }
-    .toolbar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-    .chip{ display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:999px; background:#fff; border:1.5px solid var(--line);
-      box-shadow: 0 2px 8px rgba(0,0,0,.05); font-weight:600; }
-    .chip input{ width:58px; border:1.5px solid var(--line-strong); border-radius:8px; padding:6px 6px; text-align:center; font:600 13px/1 system-ui; outline:none; background:#fff; }
-    .btn{ appearance:none; border:1.5px solid var(--line-strong); background: linear-gradient(#ffffff, #faf7f4);
-      padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:700; color:#245e54; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-    .grid{ display:grid; gap:12px; grid-template-columns: 1.05fr .95fr; min-height:0; }
-    @media (max-width: 920px){ .grid{ grid-template-columns:1fr; } }
-    .card{ background:#fffaf6; border:1.5px solid var(--line); border-radius: var(--radius); padding:12px; min-height:0; display:grid; gap:8px; }
-    .card h2{ margin:0; font-size:15px; display:flex; align-items:center; gap:6px; }
-    .field{ border:1.5px solid var(--line-strong); background:#fff; border-radius:12px; overflow:hidden; box-shadow: inset 0 1px 0 rgba(0,0,0,.04); }
-    textarea{ width:100%; min-height:138px; max-height:190px; resize:vertical; border:0; outline:0; padding:10px 12px 12px; background:#fff; color:var(--ink);
-      font: 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace; }
-    .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .btn.peach{ color:#6b2b24; background:linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#ffb6a9,#ffc6c6) border-box; border:1.5px solid transparent; }
-    .btn.mint{ color:#20584d; background:linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#b8ece2,#c7f2eb) border-box; border:1.5px solid transparent; }
-    .status{ margin-left:auto; color:#b22626; font-size:12px }
-    .timer{ display:grid; gap:10px; grid-template-rows:auto auto auto; background:#fffaf6; border:1.5px solid var(--line); border-radius: var(--radius); padding:12px; }
-    .lcd{ margin:2px auto 4px; border:1.5px solid var(--line-strong); background: linear-gradient(180deg,#fff7c5,#ffe38c);
-      color:#1e1a14; font: 800 26px/1 "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing:1.5px; padding:10px 12px 8px; border-radius:10px;
-      min-width:140px; text-align:center; box-shadow: inset 0 1px 0 #fffbe0, inset 0 -2px 0 #e7c86a; }
-    .actions{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
-    .pill{ padding:8px 10px; border-radius:10px; border:1.5px solid var(--line-strong); background:#fff; cursor:pointer; font-weight:700; box-shadow:0 1px 6px rgba(0,0,0,.06); }
-    .pill.start{ background:#e7faf4; color:#24695d } .pill.pause{ background:#fff0ed; color:#7a3c34 } .pill.reset{ background:#fff8df; color:#6d5a23 }
-    .inputs{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-    .ibox{ background:#fff; border:1.5px solid var(--line-strong); border-radius:10px; padding:6px; text-align:center; }
-    .ibox label{ display:block; font-size:11px; color:var(--ink-soft); }
-    .ibox input{ width:100%; border:0; outline:0; background:transparent; font:700 16px/1 system-ui; color:#333; text-align:center; }
+    body{
+      margin:0; color:var(--ink);
+      font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:linear-gradient(180deg,var(--bg-a),var(--bg-b) 45%,var(--bg-c) 100%);
+      -webkit-font-smoothing:antialiased; overflow-x:hidden;
+    }
+    .wrap{max-width:1000px;margin:clamp(16px,4vh,28px) auto;padding:14px;background:#fffdfb;
+      border:1.5px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:grid;gap:12px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .title{display:flex;align-items:center;gap:8px}
+    .title h1{margin:0;font-weight:700;font-size:clamp(18px,2.1vw,22px)}
+    .subtitle{margin:2px 0 0;color:var(--ink-soft);font-size:12.5px}
+    .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .chip{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:#fff;border:1.5px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.05);font-weight:600}
+    .chip input{width:58px;border:1.5px solid var(--line-strong);border-radius:8px;padding:6px;text-align:center;font:600 13px/1 system-ui;background:#fff}
+    .btn{appearance:none;border:1.5px solid var(--line-strong);background:linear-gradient(#fff,#faf7f4);padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:700;color:#245e54;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .btn:active{transform:translateY(1px)}
+    .grid{display:grid;gap:12px;grid-template-columns:1.05fr .95fr;min-height:0}
+    @media (max-width:920px){.grid{grid-template-columns:1fr}}
 
-    /* Pawprint */
-    .paw{ background:#fffaf6; border:1.5px solid var(--line); border-radius: var(--radius); padding:12px; display:grid; gap:10px; }
-    .kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
-    .kpi{ background:#fff; border:1.5px solid var(--line-strong); border-radius:10px; padding:8px; text-align:center; }
-    .kpi strong{ font-size:14px } .kpi small{ display:block; font-size:11px; color:var(--ink-soft) }
-    .chartShell{ border:1.5px solid var(--line-strong); border-radius:10px; background:#fff; padding:8px; }
-    .chartViewport{ overflow:hidden; position:relative; height:88px }
-    .chart{ display:flex; align-items:flex-end; gap:10px; height:88px; padding:0 8px }
-    .bar{ width:18px; background:var(--accent-soft); border:1.5px solid #cfe5df; border-radius:6px; position:relative; overflow:hidden }
-    .bar>span{ position:absolute; bottom:0; left:0; right:0; height:0%; background:var(--accent); border-radius:6px }
-    .barLabel{ position:absolute; bottom:-18px; left:50%; transform:translateX(-50%); font-size:10px; color:#8a8078; white-space:nowrap }
+    .card,.timer,.paw,.pets{background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px}
+    .card{display:grid;gap:8px;min-height:0}
+    .card h2,.timer h2,.paw h2,.pets h2{margin:0;font-size:15px;display:flex;align-items:center;gap:6px}
 
-    /* Choose Your PET — 3x2 grid, always filled */
-    .pets{ background:#fffaf6; border:1.5px solid var(--line); border-radius:var(--radius); padding:12px; display:grid; gap:8px }
-    .pets h2{ margin:0; font-size:15px }
-    .petGrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px }
-    .petOpt{ position:relative; border:1.5px solid var(--line-strong); background:#fff; border-radius:10px; padding:0; display:grid; place-items:center; cursor:pointer; transition:transform .05s; aspect-ratio:1/1; overflow:hidden }
-    .petOpt img{ width:100%; height:100%; object-fit:contain; display:block; mix-blend-mode:multiply }
-    .petOpt:hover{ transform:translateY(-1px) }
-    .petOpt.active{ outline:2px solid var(--accent); box-shadow:inset 0 0 0 2px #fff }
+    .field{border:1.5px solid var(--line-strong);background:#fff;border-radius:12px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(0,0,0,.04)}
+    textarea{width:100%;min-height:138px;max-height:190px;resize:vertical;border:0;outline:0;padding:10px 12px 12px;background:#fff;color:var(--ink);font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .btn.peach{color:#6b2b24;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#ffb6a9,#ffc6c6) border-box;border:1.5px solid transparent}
+    .btn.mint{color:#20584d;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#b8ece2,#c7f2eb) border-box;border:1.5px solid transparent}
+    .status{margin-left:auto;color:#0f7d4c;font-size:12px}
 
-    .left{ display:grid; gap:12px; grid-template-rows:auto 1fr }
-    .right{ display:grid; gap:12px; grid-template-rows:auto auto 1fr }
+    .timer{display:grid;gap:10px;grid-template-rows:auto auto auto}
+    .lcd{margin:2px auto 4px;border:1.5px solid var(--line-strong);background:linear-gradient(180deg,#fff7c5,#ffe38c);color:#1e1a14;
+      font:800 26px/1 "JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:1.5px;padding:10px 12px 8px;border-radius:10px;min-width:140px;text-align:center;box-shadow:inset 0 1px 0 #fffbe0,inset 0 -2px 0 #e7c86a}
+    .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+    .pill{padding:8px 10px;border-radius:10px;border:1.5px solid var(--line-strong);background:#fff;cursor:pointer;font-weight:700;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+    .pill.start{background:#e7faf4;color:#24695d}.pill.pause{background:#fff0ed;color:#7a3c34}.pill.reset{background:#fff8df;color:#6d5a23}
+    .inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .ibox{background:#fff;border:1.5px solid var(--line-strong);border-radius:10px;padding:6px;text-align:center}
+    .ibox label{display:block;font-size:11px;color:var(--ink-soft)}
+    .ibox input{width:100%;border:0;outline:0;background:transparent;font:700 16px/1.2 ui-monospace,Menlo,Consolas;text-align:center}
+
+    .paw .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .stat{background:#fff;border:1.5px solid var(--line-strong);border-radius:12px;padding:10px;text-align:center}
+    .stat b{display:block;font-weight:800;font-size:16px}
+    .chart{margin-top:8px;background:#fff;border:1.5px dashed var(--line-strong);border-radius:12px;padding:12px;height:110px;display:flex;gap:8px;align-items:flex-end}
+    .bar{flex:1;min-width:10px;background:#dff0ea;border:1.5px solid #c7e3db;border-radius:8px}
+    .bar.fill{background:#bfe5d7}
+
+    .pets-grid{display:grid;grid-template-columns:repeat(3,100px);grid-auto-rows:100px;gap:10px;justify-content:end}
+    .pet-tile{display:flex;align-items:center;justify-content:center;background:#fff;border:1.5px solid var(--line-strong);border-radius:12px;cursor:pointer;transition:transform .05s ease}
+    .pet-tile:active{transform:translateY(1px)}
+    .pet-tile img{width:72px;height:72px;object-fit:contain;image-rendering:-webkit-optimize-contrast}
+    .pet-tile.sel{outline:3px solid #2f8d7c; box-shadow:0 0 0 2px #cfeae6 inset}
+
+    .mini{font-size:12px;color:#7d8b84}
   </style>
 </head>
 <body>
-  <main class="wrap">
+  <div class="wrap">
     <div class="top">
       <div class="title">
-        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12M6 12h9M6 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        <div>
-          <h1>PET Control Panel</h1>
-          <div class="subtitle">Personal Empowerment Tool</div>
-        </div>
+        <h1>PET Control Panel</h1>
+        <div class="subtitle">Personal Empowerment Tool</div>
       </div>
       <div class="toolbar">
-        <div class="chip">Talk every
-          <input id="freq" type="number" min="1" value="45" aria-label="Talk frequency (minutes)"/> min
-        </div>
-        <button id="freqSave" class="btn">Save</button>
+        <div class="chip">Talk every <input id="period" type="number" min="1" value="45"> min</div>
+        <button id="savePeriod" class="btn">Save</button>
       </div>
     </div>
 
     <div class="grid">
-      <div class="left">
-        <section class="card">
-          <h2>💬 Pep Lines</h2>
-          <div class="field"><textarea id="lines" placeholder="One line per row&#10;e.g. Tiny step now—future you says thanks."></textarea></div>
-          <div class="row">
-            <button id="save" class="btn peach">Save to PET ✨</button>
-            <button id="load" class="btn mint">Load from PET 🍃</button>
-            <div id="status" class="status" role="status" aria-live="polite"></div>
-          </div>
-        </section>
-
-        <section class="paw">
-          <h2>🐾 Progress Pawprint</h2>
-          <div class="kpis">
-            <div class="kpi"><strong id="kToday">0m</strong><small>Today</small></div>
-            <div class="kpi"><strong id="k7">0m</strong><small>Last 7 days</small></div>
-            <div class="kpi"><strong id="kStreak">0</strong><small>Current Streak</small></div>
-            <div class="kpi"><strong id="kLongest">0</strong><small>Longest</small></div>
-          </div>
-          <div class="chartShell">
-            <div class="chartViewport"><div id="chart" class="chart" aria-hidden="true"></div></div>
-          </div>
-        </section>
+      <!-- Left column -->
+      <div class="card">
+        <h2>💬 Pep Lines</h2>
+        <div class="field"><textarea id="lines" placeholder="One line per row
+e.g. Tiny step now—future you says thanks."></textarea></div>
+        <div class="row">
+          <button id="saveLines" class="btn peach">Save to PET ✨</button>
+          <button id="loadLines" class="btn mint">Load from PET 🌿</button>
+          <div id="status" class="status"></div>
+        </div>
       </div>
 
-      <div class="right">
-        <section class="card timer" aria-label="Focus Timer">
-          <h2>🕰️ Focus Timer</h2>
-          <div class="lcd" id="lcd">25:00</div>
-          <div class="actions">
-            <button class="pill start" id="start">Start</button>
-            <button class="pill pause" id="pause">Pause</button>
-            <button class="pill reset" id="reset">Reset</button>
-            <button class="pill" id="p5">5m</button>
-            <button class="pill" id="p25">25m</button>
-          </div>
-          <div class="inputs">
-            <div class="ibox"><label>Hours</label><input id="h" type="number" min="0" value="0"></div>
-            <div class="ibox"><label>Minutes</label><input id="m" type="number" min="0" value="25"></div>
-            <div class="ibox"><label>Seconds</label><input id="s" type="number" min="0" value="0"></div>
-          </div>
-        </section>
-
-        <section class="pets">
-          <h2>🧸 Choose Your PET</h2>
-          <div id="petGrid" class="petGrid" role="listbox" aria-label="Choose your PET"></div>
-        </section>
+      <!-- Right column -->
+      <div class="timer">
+        <h2>⏱️ Focus Timer</h2>
+        <div class="lcd" id="lcd">25:00</div>
+        <div class="actions">
+          <button id="start" class="pill start">Start</button>
+          <button id="pause" class="pill pause">Pause</button>
+          <button id="reset" class="pill reset">Reset</button>
+          <button id="m5" class="pill">5m</button>
+          <button id="m25" class="pill">25m</button>
+        </div>
+        <div class="inputs">
+          <div class="ibox"><label>Hours</label><input id="h" type="number" value="0" min="0"></div>
+          <div class="ibox"><label>Minutes</label><input id="m" type="number" value="25" min="0"></div>
+          <div class="ibox"><label>Seconds</label><input id="s" type="number" value="0" min="0"></div>
+        </div>
       </div>
     </div>
-  </main>
 
-  <script>
-    // ---------- Control page <-> Extension ----------
-    const EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd"; // <— set your ID!
-    const statusEl = document.getElementById('status');
-    const say = (txt, ok=true)=>{ statusEl.textContent = txt; statusEl.style.color = ok ? '#0f7d4c' : '#b00020'; };
-    const canUseAPI = () => typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.sendMessage === "function";
-    function sendToPET(payload, cb){
-      if(!canUseAPI()){ say("Chrome API not available. Use Google Chrome on desktop.", false); cb?.(null); return; }
-      try{
-        chrome.runtime.sendMessage(EXT_ID, payload, (resp)=>{
-          if(chrome.runtime.lastError){ say("Could not reach PET: "+chrome.runtime.lastError.message, false); cb?.(null); return; }
-          cb?.(resp);
-        });
-      }catch(e){ say("Could not reach PET: "+(e?.message||e), false); cb?.(null); }
+    <div class="grid">
+      <div class="paw">
+        <h2>🐾 Progress Pawprint</h2>
+        <div class="stats">
+          <div class="stat"><b id="today">0m</b><span class="mini">Today</span></div>
+          <div class="stat"><b id="week">0m</b><span class="mini">Last 7 days</span></div>
+          <div class="stat"><b id="streak">0</b><span class="mini">Current Streak</span></div>
+          <div class="stat"><b id="longest">0</b><span class="mini">Longest</span></div>
+        </div>
+        <div id="chart" class="chart"></div>
+      </div>
+
+      <div class="pets">
+        <h2>🧸 Choose Your PET</h2>
+        <div id="pets" class="pets-grid"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ---------- helpers (web + extension) ----------
+  const HAS_CHROME = !!(window.chrome && chrome.storage && chrome.storage.local);
+  const SESSIONS_KEY = 'petSessions'; // [{ts:number(seconds), seconds:number}]
+  const PET_AVATAR   = 'petAvatar';
+  const PERIOD_KEY   = 'periodMinutes';
+  const PET_LINES    = 'petCustomLines';
+
+  const qs = (id) => document.getElementById(id);
+  const statusEl = qs('status');
+
+  function setStatus(msg, ok=true) {
+    statusEl.textContent = msg || '';
+    statusEl.style.color = ok ? '#0f7d4c' : '#b22626';
+    if (msg) setTimeout(()=> setStatus(''), 2500);
+  }
+
+  function lsGet(key, fallback) {
+    try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+    catch { return fallback; }
+  }
+  function lsSet(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+  // ---------- pep lines ----------
+  const linesEl = qs('lines');
+  qs('saveLines').addEventListener('click', () => {
+    const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    lsSet(PET_LINES, lines);
+    if (HAS_CHROME) chrome.storage.local.set({ [PET_LINES]: lines, petSpeakNow: { text: lines[lines.length-1] || 'You’ve got this.', at: Date.now() }});
+    setStatus('Saved. PET will nudge with your lines.');
+  });
+  qs('loadLines').addEventListener('click', () => {
+    if (HAS_CHROME) {
+      chrome.storage.local.get([PET_LINES], (cfg) => {
+        const arr = Array.isArray(cfg[PET_LINES]) ? cfg[PET_LINES] : lsGet(PET_LINES, []);
+        linesEl.value = arr.join('\n');
+        setStatus('Loaded from PET.');
+      });
+    } else {
+      linesEl.value = (lsGet(PET_LINES, [])).join('\n');
+      setStatus('Loaded from browser.');
     }
+  });
 
-    // ----- Pep lines -----
-    const linesEl = document.getElementById('lines');
-    document.getElementById('save').onclick=()=>{
-      const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
-      if(!lines.length) return say("Add at least one line.", false);
-      const last = lines[lines.length-1];
-      sendToPET({ type:"PET_ADD_LINES", lines }, (r)=> {
-        if(!r?.ok) return say("PET error: "+(r?.error||"Unknown"), false);
-        sendToPET({ type:"PET_SAY_NOW", text:last });
-        say(`Saved & said: “${last}”`);
-      });
-    };
-    document.getElementById('load').onclick=()=>{
-      sendToPET({ type:"PET_GET_LINES" }, (r)=>{
-        if(!r?.ok) return say("PET error: "+(r?.error||"Unknown"), false);
-        linesEl.value = (r.lines||[]).join('\n'); say(`Connected. Load or add lines.`);
-      });
-    };
+  // ---------- timer ----------
+  let countdown = null, remaining = 1500; // 25 * 60
+  const lcd = qs('lcd'), hIn = qs('h'), mIn = qs('m'), sIn = qs('s');
 
-    // ----- Frequency -----
-    const freqEl = document.getElementById('freq');
-    document.getElementById('freqSave').onclick=()=>{
-      const m = Math.max(1, parseInt(freqEl.value||'45',10));
-      sendToPET({ type:"SET_FREQUENCY", minutes:m }, (r)=>{
-        if(r?.ok) say(`Saved. PET will nudge every ${m} min.`);
-        else say("Could not save frequency.", false);
-      });
-    };
+  function fmt(sec){
+    const m = Math.floor(sec/60), s = sec%60;
+    return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+  function syncInputsToRemaining(){
+    const h = Math.floor(remaining/3600);
+    const m = Math.floor((remaining%3600)/60);
+    const s = remaining%60;
+    hIn.value = h; mIn.value = m; sIn.value = s; lcd.textContent = fmt(remaining);
+  }
+  function recalcFromInputs(){
+    const h = Math.max(0, parseInt(hIn.value||'0',10));
+    const m = Math.max(0, parseInt(mIn.value||'0',10));
+    const s = Math.max(0, parseInt(sIn.value||'0',10));
+    remaining = h*3600 + m*60 + s;
+    lcd.textContent = fmt(remaining);
+  }
+  [hIn,mIn,sIn].forEach(el=> el.addEventListener('change', recalcFromInputs));
 
-    // ----- PET avatars — 3x2, filled -----
-    const PETS = [
-      "brown_dog_nobg.png",
-      "pet.png",                 // sausage dog (replaces icon128)
-      "light_dog_nobg.png",
-      "orange_hams_nobg.png",
-      "orange_cat_nobg.png",
-      "icon128_fixed.png"        // optional alt dog
-    ];
-    const petGrid = document.getElementById('petGrid');
-    let currentAvatar = null;
-    function renderPets(){
-      petGrid.innerHTML = "";
-      PETS.forEach(name=>{
-        const btn = document.createElement('button');
-        btn.className = 'petOpt' + (name===currentAvatar?' active':'');
-        btn.setAttribute('role','option');
-        btn.setAttribute('aria-selected', name===currentAvatar ? 'true':'false');
-        const img = document.createElement('img');
-        img.alt = name.replace(/[_-]/g,' ').replace(/\..+$/,'');
-        // display images from your repo (page), selection only; extension loads from /assets inside the extension
-        img.src = 'assets/' + name;
-        btn.appendChild(img);
-        btn.onclick = () => {
-          currentAvatar = name;
-          [...petGrid.children].forEach(c=>c.classList.remove('active'));
-          btn.classList.add('active');
-          sendToPET({ type:"SET_AVATAR", name });
-        };
-        petGrid.appendChild(btn);
+  function tick(){
+    if (remaining>0){ remaining--; lcd.textContent = fmt(remaining); }
+    else {
+      stopTimer();
+      finishSession();
+    }
+  }
+  function startTimer(){
+    stopTimer();
+    recalcFromInputs();
+    if (remaining<=0) remaining = 1500; // default 25m
+    countdown = setInterval(tick, 1000);
+  }
+  function stopTimer(){ if (countdown){ clearInterval(countdown); countdown=null; } }
+  function resetTimer(){
+    stopTimer();
+    remaining = 1500; syncInputsToRemaining();
+  }
+  function setQuick(min){ hIn.value = 0; mIn.value = min; sIn.value = 0; recalcFromInputs(); }
+
+  qs('start').addEventListener('click', startTimer);
+  qs('pause').addEventListener('click', stopTimer);
+  qs('reset').addEventListener('click', resetTimer);
+  qs('m5').addEventListener('click', ()=> setQuick(5));
+  qs('m25').addEventListener('click',()=> setQuick(25));
+  syncInputsToRemaining();
+
+  // When a session ends → add stats and make PET talk a line
+  function finishSession(){
+    const seconds = Math.max(1, parseInt(hIn.value||'0',10)*3600 + parseInt(mIn.value||'0',10)*60 + parseInt(sIn.value||'0',10));
+    addSession(seconds);
+    // pick a random line to celebrate
+    const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const text = (lines.length ? lines[Math.floor(Math.random()*lines.length)] : "Nice focus! Another step done.");
+    if (HAS_CHROME) chrome.storage.local.set({ petSpeakNow: { text, at: Date.now() }});
+    setStatus('Nice! Session added.');
+    resetTimer();
+  }
+
+  // ---------- progress pawprint ----------
+  function startOfDay(ts){ const d=new Date(ts); d.setHours(0,0,0,0); return d.getTime(); }
+  function dayKey(ts){ return new Date(startOfDay(ts)).toISOString().slice(0,10); }
+
+  function addSession(seconds, atMs=Date.now()){
+    // local storage copy (works on website)
+    const local = lsGet(SESSIONS_KEY, []);
+    local.push({ ts: Math.floor(atMs/1000), seconds: Math.max(1, Math.floor(seconds)) });
+    lsSet(SESSIONS_KEY, local.slice(-2000));
+    // extension copy (if installed)
+    if (HAS_CHROME) {
+      // write directly so bg & content scripts see it
+      chrome.storage.local.get([SESSIONS_KEY], (cfg)=>{
+        const arr = Array.isArray(cfg[SESSIONS_KEY]) ? cfg[SESSIONS_KEY] : [];
+        arr.push({ ts: Math.floor(atMs/1000), seconds: Math.max(1, Math.floor(seconds)) });
+        chrome.storage.local.set({ [SESSIONS_KEY]: arr.slice(-2000) }, updateStatsFromStores);
       });
     }
+    updateStatsFromStores();
+  }
 
-    // ----- Pawprint chart -----
-    function formatMin(sec){ return Math.round(sec/60) + 'm'; }
-    function drawChart(weekly){
-      const c = document.getElementById('chart');
-      c.innerHTML = '';
-      weekly.forEach(d=>{
-        const bar = document.createElement('div'); bar.className='bar';
-        const fill = document.createElement('span'); fill.style.height = Math.min(100, (d.seconds/60)) + '%';
-        const label = document.createElement('div'); label.className='barLabel'; label.textContent = d.date.slice(5).replace('-','/');
-        bar.appendChild(fill); bar.appendChild(label); c.appendChild(bar);
-      });
+  function computeStats(sessions){
+    const now = Date.now();
+    const todayStart = startOfDay(now);
+    let today = 0, week = 0;
+    const perDay = new Map();
+    for (const s of sessions){
+      const ms = s.ts*1000;
+      const key = dayKey(ms);
+      perDay.set(key, (perDay.get(key)||0)+s.seconds);
+      if (ms>=todayStart) today += s.seconds;
     }
+    // last 7 days
+    const days = [];
+    for (let i=6;i>=0;i--){
+      const d = new Date(todayStart - i*86400000);
+      const key = d.toISOString().slice(0,10);
+      const sec = perDay.get(key)||0;
+      week += sec;
+      days.push(sec);
+    }
+    // streaks
+    let streak=0, longest=0, cur = new Date(todayStart);
+    while (true){
+      const key = cur.toISOString().slice(0,10);
+      if ((perDay.get(key)||0) > 0) { streak++; longest = Math.max(longest, streak); }
+      else break;
+      cur = new Date(cur.getTime() - 86400000);
+    }
+    return { today:Math.round(today/60), week:Math.round(week/60), streak, longest, bars: days.map(v=>Math.round(v/60)) };
+  }
 
-    // ----- Initial load -----
-    sendToPET({ type:"GET_SETTINGS" }, (r)=>{
-      if(!r?.ok) return;
-      freqEl.value = r.minutes || 45;
-      currentAvatar = r.avatar || PETS[0];
-      renderPets();
-      if (r.stats){
-        document.getElementById('kToday').textContent   = formatMin(r.stats.todaySeconds);
-        document.getElementById('k7').textContent       = formatMin(r.stats.weekly.reduce((a,b)=>a+b.seconds,0));
-        document.getElementById('kStreak').textContent  = r.stats.currentStreak;
-        document.getElementById('kLongest').textContent = r.stats.longestStreak;
-        drawChart(r.stats.weekly);
-      }
+  function updateStatsFromStores(){
+    const local = lsGet(SESSIONS_KEY, []);
+    if (HAS_CHROME) {
+      chrome.storage.local.get([SESSIONS_KEY], (cfg)=>{
+        const ext = Array.isArray(cfg[SESSIONS_KEY]) ? cfg[SESSIONS_KEY] : [];
+        renderStats(computeStats([...local, ...ext]));
+      });
+    } else {
+      renderStats(computeStats(local));
+    }
+  }
+
+  function renderStats(st){
+    qs('today').textContent   = (st.today||0) + 'm';
+    qs('week').textContent    = (st.week||0) + 'm';
+    qs('streak').textContent  = st.streak||0;
+    qs('longest').textContent = st.longest||0;
+
+    const chart = qs('chart'); chart.innerHTML='';
+    // 14 bars looks nice & compact; fill from the 7-day series twice for a gentle pattern
+    const bars = [...st.bars, ...st.bars].slice(-14);
+    for (const v of bars){
+      const b=document.createElement('div'); b.className='bar'+(v>0?' fill':''); b.style.height=Math.min(100, 8+v*6)+'px';
+      chart.appendChild(b);
+    }
+  }
+  updateStatsFromStores();
+
+  // ---------- period (nudge frequency) ----------
+  const periodEl = qs('period');
+  function loadPeriod(){
+    if (HAS_CHROME) chrome.storage.local.get([PERIOD_KEY], (cfg)=> periodEl.value = cfg[PERIOD_KEY] || 45);
+    else periodEl.value = lsGet(PERIOD_KEY, 45);
+  }
+  loadPeriod();
+
+  qs('savePeriod').addEventListener('click', ()=>{
+    const val = Math.max(1, parseInt(periodEl.value||'45',10));
+    lsSet(PERIOD_KEY, val);
+    if (HAS_CHROME) {
+      chrome.storage.local.set({ [PERIOD_KEY]: val }, ()=> chrome.runtime?.sendMessage?.({ type:'RESCHEDULE' }));
+    }
+    setStatus('Saved. PET will nudge every '+val+' min.');
+  });
+
+  // ---------- pet chooser (3×2, no empty big gap) ----------
+  const PETS = [
+    { file:'brown_dog_nobg.png', label:'Brown pup' },
+    { file:'pet.png',            label:'Sausage dog' },
+    { file:'light_dog_nobg.png', label:'Light pup' },
+    { file:'orange_hams_nobg.png', label:'Hamster' },
+    { file:'orange_cat_nobg.png',  label:'Orange cat' }
+  ];
+  const petGrid = qs('pets');
+  let selected = null;
+
+  function markSelected(tile){ [...petGrid.children].forEach(c=>c.classList.remove('sel')); tile.classList.add('sel'); }
+
+  function renderPets(saved){
+    petGrid.innerHTML='';
+    PETS.forEach(p=>{
+      const div=document.createElement('div'); div.className='pet-tile';
+      const img=document.createElement('img'); img.alt=p.label; img.src = 'assets/'+p.file;
+      div.appendChild(img);
+      if (p.file===saved) { markSelected(div); selected=div; }
+      div.addEventListener('click', ()=>{
+        markSelected(div);
+        lsSet(PET_AVATAR, p.file);
+        if (HAS_CHROME) chrome.storage.local.set({ [PET_AVATAR]: p.file });
+      });
+      petGrid.appendChild(div);
     });
-  </script>
+  }
+
+  (function init(){
+    // lines initial
+    if (HAS_CHROME) {
+      chrome.storage.local.get([PET_LINES], (cfg)=>{
+        const arr = Array.isArray(cfg[PET_LINES]) ? cfg[PET_LINES] : lsGet(PET_LINES, []);
+        linesEl.value = arr.join('\n');
+      });
+      chrome.storage.local.get([PET_AVATAR], (cfg)=> renderPets(cfg[PET_AVATAR] || lsGet(PET_AVATAR, PETS[0].file)));
+    } else {
+      linesEl.value = (lsGet(PET_LINES, [])).join('\n');
+      renderPets(lsGet(PET_AVATAR, PETS[0].file));
+    }
+  })();
+</script>
 </body>
 </html>
