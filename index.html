@@ -1,87 +1,77 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>PET Control Panel</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    :root{
-      --bg-a:#fff4ea; --bg-b:#fde9f2; --bg-c:#e9fbf1;
-      --ink:#2b2723; --ink-soft:#7b716a;
-      --line:#d9cdc5; --line-strong:#cdbfb6;
-      --accent:#2f8d7c; --accent-soft:#e8f3f0;
-      --peach:#ffa191; --mint:#6cc7b3; --honey:#ffd674;
-      --radius:14px; --shadow:0 10px 26px rgba(40,26,16,.10), 0 2px 10px rgba(40,26,16,.06);
-    }
-    html,body{height:100%}
-    body{
-      margin:0; color:var(--ink);
-      font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-      background:linear-gradient(180deg,var(--bg-a),var(--bg-b) 45%,var(--bg-c) 100%);
-      -webkit-font-smoothing:antialiased; overflow-x:hidden;
-    }
-    .wrap{max-width:1000px;margin:clamp(16px,4vh,28px) auto;padding:14px;background:#fffdfb;
-      border:1.5px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:grid;gap:12px}
-    .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .title{display:flex;align-items:center;gap:8px}
-    .title h1{margin:0;font-weight:700;font-size:clamp(18px,2.1vw,22px)}
-    .subtitle{margin:2px 0 0;color:var(--ink-soft);font-size:12.5px}
-    .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .chip{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:#fff;border:1.5px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.05);font-weight:600}
-    .chip input{width:58px;border:1.5px solid var(--line-strong);border-radius:8px;padding:6px;text-align:center;font:600 13px/1 system-ui;background:#fff}
-    .btn{appearance:none;border:1.5px solid var(--line-strong);background:linear-gradient(#fff,#faf7f4);padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:700;color:#245e54;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-    .btn:active{transform:translateY(1px)}
-    .grid{display:grid;gap:12px;grid-template-columns:1.05fr .95fr;min-height:0}
-    @media (max-width:920px){.grid{grid-template-columns:1fr}}
+<meta charset="utf-8" />
+<title>PET Control Panel</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root{
+    --bg-a:#fff4ea; --bg-b:#fde9f2; --bg-c:#e9fbf1;
+    --ink:#2b2723; --ink-soft:#7b716a;
+    --line:#d9cdc5; --line-strong:#cdbfb6;
+    --accent:#2f8d7c; --accent-soft:#e8f3f0;
+    --peach:#ffa191; --mint:#6cc7b3; --honey:#ffd674;
+    --radius:14px; --shadow:0 10px 26px rgba(40,26,16,.10), 0 2px 10px rgba(40,26,16,.06);
+  }
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--ink);
+    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+    background:linear-gradient(180deg,var(--bg-a),var(--bg-b) 45%,var(--bg-c) 100%);
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  .wrap{max-width:1000px;margin:clamp(16px,4vh,28px) auto;padding:14px;background:#fffdfb;
+    border:1.5px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:grid;gap:12px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .title{display:flex;align-items:center;gap:8px}
+  .title h1{margin:0;font-weight:700;font-size:clamp(18px,2.1vw,22px)}
+  .subtitle{margin:2px 0 0;color:var(--ink-soft);font-size:12.5px}
+  .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .chip{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:#fff;border:1.5px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.05);font-weight:600}
+  .chip input{width:58px;border:1.5px solid var(--line-strong);border-radius:8px;padding:6px;text-align:center;font:600 13px/1 system-ui;background:#fff}
+  .btn{appearance:none;border:1.5px solid var(--line-strong);background:linear-gradient(#fff,#faf7f4);padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:700;color:#245e54;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  .btn:active{transform:translateY(1px)}
+  .grid{display:grid;gap:12px;grid-template-columns:1.05fr .95fr;min-height:0}
+  @media (max-width:920px){.grid{grid-template-columns:1fr}}
 
-    .card,.timer,.paw,.pets{background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px}
-    .card{display:grid;gap:8px;min-height:0}
-    .card h2,.timer h2,.paw h2,.pets h2{margin:0;font-size:15px;display:flex;align-items:center;gap:6px}
+  .card,.timer,.paw,.pets{background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px}
+  .card{display:grid;gap:8px;min-height:0}
+  .card h2,.timer h2,.paw h2,.pets h2{margin:0;font-size:15px;display:flex;align-items:center;gap:6px}
 
-    .field{border:1.5px solid var(--line-strong);background:#fff;border-radius:12px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(0,0,0,.04)}
-    textarea{width:100%;min-height:138px;max-height:190px;resize:vertical;border:0;outline:0;padding:10px 12px 12px;background:#fff;color:var(--ink);font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .btn.peach{color:#6b2b24;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#ffb6a9,#ffc6c6) border-box;border:1.5px solid transparent}
-    .btn.mint{color:#20584d;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#b8ece2,#c7f2eb) border-box;border:1.5px solid transparent}
-    .status{margin-left:auto;color:#0f7d4c;font-size:12px}
+  .field{border:1.5px solid var(--line-strong);background:#fff;border-radius:12px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(0,0,0,.04)}
+  textarea{width:100%;min-height:138px;max-height:190px;resize:vertical;border:0;outline:0;padding:10px 12px 12px;background:#fff;color:var(--ink);font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn.peach{color:#6b2b24;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#ffb6a9,#ffc6c6) border-box;border:1.5px solid transparent}
+  .btn.mint{color:#20584d;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#b8ece2,#c7f2eb) border-box;border:1.5px solid transparent}
+  .status{margin-left:auto;color:#0f7d4c;font-size:12px}
 
-    .timer{display:grid;gap:10px;grid-template-rows:auto auto auto}
-    .lcd{margin:2px auto 4px;border:1.5px solid var(--line-strong);background:linear-gradient(180deg,#fff7c5,#ffe38c);color:#1e1a14;
-      font:800 26px/1 "JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:1.5px;padding:10px 12px 8px;border-radius:10px;min-width:140px;text-align:center;box-shadow:inset 0 1px 0 #fffbe0,inset 0 -2px 0 #e7c86a}
-    .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-    .pill{padding:8px 10px;border-radius:10px;border:1.5px solid var(--line-strong);background:#fff;cursor:pointer;font-weight:700;box-shadow:0 1px 6px rgba(0,0,0,.06)}
-    .pill.start{background:#e7faf4;color:#24695d}.pill.pause{background:#fff0ed;color:#7a3c34}.pill.reset{background:#fff8df;color:#6d5a23}
-    .inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-    .ibox{background:#fff;border:1.5px solid var(--line-strong);border-radius:10px;padding:6px;text-align:center}
-    .ibox label{display:block;font-size:11px;color:var(--ink-soft)}
-    .ibox input{width:100%;border:0;outline:0;background:transparent;font:700 16px/1.2 ui-monospace,Menlo,Consolas;text-align:center}
+  .timer{display:grid;gap:10px;grid-template-rows:auto auto auto}
+  .lcd{margin:2px auto 4px;border:1.5px solid var(--line-strong);background:linear-gradient(180deg,#fff7c5,#ffe38c);color:#1e1a14;
+    font:800 26px/1 "JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:1.5px;padding:10px 12px 8px;border-radius:10px;min-width:140px;text-align:center;box-shadow:inset 0 1px 0 #fffbe0,inset 0 -2px 0 #e7c86a}
+  .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .pill{padding:8px 10px;border-radius:10px;border:1.5px solid var(--line-strong);background:#fff;cursor:pointer;font-weight:700;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+  .pill.start{background:#e7faf4;color:#24695d}.pill.pause{background:#fff0ed;color:#7a3c34}.pill.reset{background:#fff8df;color:#6d5a23}
+  .inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .ibox{background:#fff;border:1.5px solid var(--line-strong);border-radius:10px;padding:6px;text-align:center}
+  .ibox label{display:block;font-size:11px;color:var(--ink-soft)}
+  .ibox input{width:100%;border:0;outline:0;background:transparent;font:700 16px/1.2 ui-monospace,Menlo,Consolas;text-align:center}
 
-    .paw .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-    .stat{background:#fff;border:1.5px solid var(--line-strong);border-radius:12px;padding:10px;text-align:center}
-    .stat b{display:block;font-weight:800;font-size:16px}
-    .chart{margin-top:8px;background:#fff;border:1.5px dashed var(--line-strong);border-radius:12px;padding:12px;height:110px;display:flex;gap:8px;align-items:flex-end}
-    .bar{flex:1;min-width:10px;background:#dff0ea;border:1.5px solid #c7e3db;border-radius:8px}
-    .bar.fill{background:#bfe5d7}
+  .paw .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .stat{background:#fff;border:1.5px solid var(--line-strong);border-radius:12px;padding:10px;text-align:center}
+  .stat b{display:block;font-weight:800;font-size:16px}
+  .chart{margin-top:8px;background:#fff;border:1.5px dashed var(--line-strong);border-radius:12px;padding:12px;height:132px;display:flex;gap:10px;align-items:flex-end;position:relative}
+  .bar{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .bar span{display:block;width:100%;height:12px;border-radius:10px;background:#dff0ea;border:1.5px solid #c7e3db}
+  .bar span.fill{background:#bfe5d7}
+  .bar .lbl{font-size:12px;color:#675f58;white-space:nowrap}
 
-    /* PET chooser — left aligned, fills card (3×2) */
-    .pets-grid{
-      display:grid;
-      grid-template-columns:repeat(3, 1fr);
-      grid-auto-rows:110px;
-      gap:10px;
-      justify-content:start;   /* left align, no empty left space */
-    }
-    .pet-tile{
-      display:flex;align-items:center;justify-content:center;
-      background:#fff;border:1.5px solid var(--line-strong);border-radius:12px;
-      cursor:pointer;transition:transform .05s ease
-    }
-    .pet-tile:active{transform:translateY(1px)}
-    .pet-tile img{width:76px;height:76px;object-fit:contain;image-rendering:-webkit-optimize-contrast}
-    .pet-tile.sel{outline:3px solid #2f8d7c; box-shadow:0 0 0 2px #cfeae6 inset}
-
-    .mini{font-size:12px;color:#7d8b84}
-  </style>
+  /* Avatars: left-aligned 3 × 2 grid that fills the box */
+  .pets-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:120px;gap:12px;justify-items:stretch;align-items:stretch;justify-content:flex-start}
+  .pet-tile{display:flex;align-items:center;justify-content:center;background:#fff;border:1.5px solid var(--line-strong);border-radius:12px;cursor:pointer;transition:transform .05s ease}
+  .pet-tile:active{transform:translateY(1px)}
+  .pet-tile img{width:84px;height:84px;object-fit:contain;image-rendering:-webkit-optimize-contrast}
+  .pet-tile.sel{outline:3px solid #2f8d7c; box-shadow:0 0 0 2px #cfeae6 inset}
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -137,12 +127,12 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
           <div class="stat"><b id="streak">0</b><span class="mini">Current Streak</span></div>
           <div class="stat"><b id="longest">0</b><span class="mini">Longest</span></div>
         </div>
-        <div id="chart" class="chart"></div>
+        <div id="chart" class="chart" aria-label="Last 14 days focus (minutes)"></div>
       </div>
 
       <div class="pets">
         <h2>🧸 Choose Your PET</h2>
-        <div id="pets" class="pets-grid"></div>
+        <div id="pets" class="pets-grid" role="listbox" aria-label="Choose your PET"></div>
       </div>
     </div>
   </div>
@@ -157,12 +147,11 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
 
   const qs = (id) => document.getElementById(id);
   const statusEl = qs('status');
-
-  function setStatus(msg, ok=true) {
+  const say = (msg, ok=true) => {
     statusEl.textContent = msg || '';
     statusEl.style.color = ok ? '#0f7d4c' : '#b22626';
-    if (msg) setTimeout(()=> setStatus(''), 2500);
-  }
+    if (msg) setTimeout(()=> say(''), 2500);
+  };
 
   function lsGet(key, fallback) {
     try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
@@ -174,20 +163,27 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   const linesEl = qs('lines');
   qs('saveLines').addEventListener('click', () => {
     const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    if (!lines.length) return say("Add at least one line.", false);
     lsSet(PET_LINES, lines);
-    if (HAS_CHROME) chrome.storage.local.set({ [PET_LINES]: lines, petSpeakNow: { text: lines[lines.length-1] || 'You’ve got this.', at: Date.now() }});
-    setStatus('Saved. PET will nudge every ' + (qs('period').value || 45) + ' min.');
+    // tell the extension (this makes the pet talk now)
+    if (HAS_CHROME) {
+      chrome.storage.local.set({
+        [PET_LINES]: lines,
+        petSpeakNow: { text: lines[lines.length-1], at: Date.now() }
+      });
+    }
+    say('Saved. PET will nudge with your lines.');
   });
   qs('loadLines').addEventListener('click', () => {
     if (HAS_CHROME) {
       chrome.storage.local.get([PET_LINES], (cfg) => {
         const arr = Array.isArray(cfg[PET_LINES]) ? cfg[PET_LINES] : lsGet(PET_LINES, []);
         linesEl.value = arr.join('\n');
-        setStatus('Loaded from PET.');
+        say('Loaded from PET.');
       });
     } else {
       linesEl.value = (lsGet(PET_LINES, [])).join('\n');
-      setStatus('Loaded from browser.');
+      say('Loaded from browser.');
     }
   });
 
@@ -195,10 +191,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   let countdown = null, remaining = 1500; // 25 * 60
   const lcd = qs('lcd'), hIn = qs('h'), mIn = qs('m'), sIn = qs('s');
 
-  function fmt(sec){
-    const m = Math.floor(sec/60), s = sec%60;
-    return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-  }
+  function fmt(sec){ const m = Math.floor(sec/60), s = sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
   function syncInputsToRemaining(){
     const h = Math.floor(remaining/3600);
     const m = Math.floor((remaining%3600)/60);
@@ -237,7 +230,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
     const text = (lines.length ? lines[Math.floor(Math.random()*lines.length)] : "Nice focus! Another step done.");
     if (HAS_CHROME) chrome.storage.local.set({ petSpeakNow: { text, at: Date.now() }});
-    setStatus('Nice! Session added.');
+    say('Nice! Session added.');
     resetTimer();
   }
 
@@ -260,13 +253,11 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   }
 
   function computeStats(sessions){
-    const now = Date.now();
-    const todayStart = startOfDay(now);
+    const now = Date.now(), todayStart = startOfDay(now);
     let today = 0, week = 0;
     const perDay = new Map();
     for (const s of sessions){
-      const ms = s.ts*1000;
-      const key = dayKey(ms);
+      const ms = s.ts*1000; const key = dayKey(ms);
       perDay.set(key, (perDay.get(key)||0)+s.seconds);
       if (ms>=todayStart) today += s.seconds;
     }
@@ -275,17 +266,13 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
       const d = new Date(todayStart - i*86400000);
       const key = d.toISOString().slice(0,10);
       const sec = perDay.get(key)||0;
-      week += sec;
-      days.push(sec);
+      week += (i<=6 ? sec : 0);
+      days.push({ date: d.toLocaleDateString(undefined,{weekday:'short'}), minutes: Math.round(sec/60) });
     }
-    let streak=0, longest=0, cur = new Date(todayStart);
-    while (true){
-      const key = cur.toISOString().slice(0,10);
-      if ((perDay.get(key)||0) > 0) { streak++; longest = Math.max(longest, streak); }
-      else break;
-      cur = new Date(cur.getTime() - 86400000);
-    }
-    return { today:Math.round(today/60), week:Math.round(week/60), streak, longest, bars: days.map(v=>Math.round(v/60)) };
+    // streaks
+    let streak=0, longest=0, cursor=todayStart;
+    while ((perDay.get(dayKey(cursor))||0) > 0) { streak++; cursor -= 86400000; }
+    return { today:Math.round(today/60), week:Math.round(week/60), streak, longest, bars: days };
   }
 
   function updateStatsFromStores(){
@@ -307,10 +294,12 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     qs('longest').textContent = st.longest||0;
 
     const chart = qs('chart'); chart.innerHTML='';
-    const bars = [...st.bars, ...st.bars].slice(-14);
-    for (const v of bars){
-      const b=document.createElement('div'); b.className='bar'+(v>0?' fill':''); b.style.height=Math.min(100, 8+v*6)+'px';
-      chart.appendChild(b);
+    for (const d of st.bars){
+      const bar = document.createElement('div'); bar.className='bar';
+      const span = document.createElement('span'); if (d.minutes>0) span.classList.add('fill');
+      span.style.height = (8 + Math.min(100, d.minutes))*1.0 + 'px';
+      const lbl = document.createElement('div'); lbl.className='lbl'; lbl.textContent = `${d.date} · ${d.minutes}m`;
+      bar.appendChild(span); bar.appendChild(lbl); chart.appendChild(bar);
     }
   }
   updateStatsFromStores();
@@ -322,51 +311,44 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     else periodEl.value = lsGet(PERIOD_KEY, 45);
   }
   loadPeriod();
-
   qs('savePeriod').addEventListener('click', ()=>{
     const val = Math.max(1, parseInt(periodEl.value||'45',10));
     lsSet(PERIOD_KEY, val);
-    if (HAS_CHROME) {
-      chrome.storage.local.set({ [PERIOD_KEY]: val }, ()=> chrome.runtime?.sendMessage?.({ type:'RESCHEDULE' }));
-    }
-    setStatus('Saved. PET will nudge every '+val+' min.');
+    if (HAS_CHROME) chrome.storage.local.set({ [PERIOD_KEY]: val }, ()=> chrome.runtime?.sendMessage?.({ type:'RESCHEDULE' }));
+    say('Saved. PET will nudge every '+val+' min.');
   });
 
-  // ---------- pet chooser (3×2, left aligned, 5 pets) ----------
+  // ---------- pet chooser (3×2, left-aligned, no gaps) ----------
   const PETS = [
-    { file:'brown_dog_nobg.png',  label:'Brown pup' },
-    { file:'pet.png',             label:'Sausage dog' },
-    { file:'light_dog_nobg.png',  label:'Light pup' },
-    { file:'orange_hams_nobg.png',label:'Hamster' },
-    { file:'orange_cat_nobg.png', label:'Orange cat' }
+    { file:'brown_dog_nobg.png',   label:'Brown pup' },
+    { file:'pet.png',              label:'Sausage dog' },
+    { file:'light_dog_nobg.png',   label:'Light pup' },
+    { file:'orange_hams_nobg.png', label:'Hamster' },
+    { file:'orange_cat_nobg.png',  label:'Orange cat' }
   ];
   const petGrid = qs('pets');
-
-  // robust image loader: try /assets/file then fallback to /file
-  function setPetImg(img, file){
-    img.src = 'assets/'+file;
-    img.onerror = () => { img.onerror=null; img.src = file; }; // GitHub Pages root case
-  }
 
   function markSelected(tile){ [...petGrid.children].forEach(c=>c.classList.remove('sel')); tile.classList.add('sel'); }
 
   function renderPets(saved){
     petGrid.innerHTML='';
     PETS.forEach(p=>{
-      const div=document.createElement('div'); div.className='pet-tile';
-      const img=document.createElement('img'); img.alt=p.label; setPetImg(img, p.file);
+      const div=document.createElement('div'); div.className='pet-tile'; div.setAttribute('role','option');
+      const img=document.createElement('img'); img.alt=p.label;
+      img.src = `./assets/${p.file}`;         // GitHub Pages (case-sensitive!)
       div.appendChild(img);
-      if (p.file===saved) { markSelected(div); }
+      if (p.file===saved) markSelected(div);
       div.addEventListener('click', ()=>{
         markSelected(div);
         lsSet(PET_AVATAR, p.file);
-        if (HAS_CHROME) chrome.storage.local.set({ [PET_AVATAR]: p.file });
+        if (HAS_CHROME) chrome.storage.local.set({ [PET_AVATAR]: p.file }); // bg/content react to this
       });
       petGrid.appendChild(div);
     });
   }
 
   (function init(){
+    // lines initial
     if (HAS_CHROME) {
       chrome.storage.local.get([PET_LINES], (cfg)=>{
         const arr = Array.isArray(cfg[PET_LINES]) ? cfg[PET_LINES] : lsGet(PET_LINES, []);
