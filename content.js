@@ -1,5 +1,7 @@
 // Inject only in top frame
-if (window.top !== window) { /* skip iframes */ } else (function install() {
+if (window.top !== window) {
+  // skip iframes
+} else (function install() {
   if (document.documentElement.dataset.petInstalled === "1") return;
   document.documentElement.dataset.petInstalled = "1";
 
@@ -7,13 +9,10 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
   root.id = "pet-root";
   document.documentElement.appendChild(root);
 
-  const DEFAULT_AVATAR = 'brown_dog_nobg.png';
-  const urlFor = (name) => chrome.runtime.getURL('assets/' + (name || DEFAULT_AVATAR));
-
   root.innerHTML = `
     <div class="pet-wrap">
       <div class="pet-avatar" id="pet-avatar"
-           style="background-image:url(${urlFor(DEFAULT_AVATAR)});"
+           style="background-image:url(${chrome.runtime.getURL('assets/brown_dog_nobg.png')});"
            title="Drag or click me"></div>
       <div class="pet-bubble right" id="pet-bubble" role="status" aria-live="polite">
         <div id="pet-text">Hi! I’m PET. Need a nudge?</div>
@@ -26,31 +25,7 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
   const bubble = root.querySelector('#pet-bubble');
   const textEl = root.querySelector('#pet-text');
 
-  function setAvatar(name) { avatar.style.backgroundImage = `url(${urlFor(name)})`; }
-
-  // Load saved avatar on start
-  chrome.storage.local.get(['petAvatar'], (cfg) => setAvatar(cfg.petAvatar || DEFAULT_AVATAR));
-
-  // React to bg + storage updates
-  chrome.runtime.onMessage.addListener((msg) => {
-    if (msg?.type === 'PET_AVATAR_CHANGED' && typeof msg.name === 'string') setAvatar(msg.name);
-    else if (msg?.type === 'NUDGE') showBubble(msg.payload || randomLine());
-    else if (msg?.type === 'PET_SAY' && typeof msg.text === 'string') showBubble(msg.text);
-    else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) customLines = msg.lines;
-  });
-  chrome.storage.onChanged.addListener((ch, area) => {
-    if (area !== 'local') return;
-    if (ch.petAvatar) setAvatar(ch.petAvatar.newValue || DEFAULT_AVATAR);
-    if (ch.petCustomLines) customLines = Array.isArray(ch.petCustomLines.newValue) ? ch.petCustomLines.newValue : [];
-    if (ch.petSpeakNow) {
-      const v = ch.petSpeakNow.newValue;
-      if (v && typeof v.text === 'string' && typeof v.at === 'number') {
-        if (Date.now() - v.at < 10_000) showBubble(v.text);
-      }
-    }
-  });
-
-  // --- bubble render ---
+  // position bubble intelligently
   function positionBubble() {
     const rect = wrap.getBoundingClientRect();
     const spaceRight = window.innerWidth - rect.right;
@@ -58,8 +33,7 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
     const preferRight = spaceRight >= 220 || spaceRight > spaceLeft;
     bubble.classList.toggle('right', preferRight);
     bubble.classList.toggle('left', !preferRight);
-    const v = getComputedStyle(wrap).getPropertyValue('--mouth-y').trim();
-    const mouthY = Number.parseInt(v || '22', 10);
+    const mouthY = 22;
     const POINTER_OFFSET = 12, TAIL_ADJUST = 6;
     bubble.style.top = `${Math.max(0, mouthY - POINTER_OFFSET)}px`;
     bubble.style.setProperty('--tail-y', `${mouthY - TAIL_ADJUST}px`);
@@ -73,8 +47,9 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
     "Future you will thank you for this."
   ];
   let customLines = [];
-  chrome.storage.local.get(['petCustomLines'], (cfg) => {
+  chrome.storage.local.get(['petCustomLines', 'petAvatar'], (cfg) => {
     if (Array.isArray(cfg.petCustomLines)) customLines = cfg.petCustomLines;
+    if (cfg.petAvatar) setAvatar(cfg.petAvatar);
   });
   const randomLine = () => {
     const pool = [...DEFAULTS, ...customLines];
@@ -96,50 +71,45 @@ if (window.top !== window) { /* skip iframes */ } else (function install() {
     }, dur);
   }
 
-  // Drag & click to speak
+  // Drag to move; click to speak
   (function enableDrag(handle, container) {
     const DRAG_THRESHOLD = 4;
     let dragging = false, down = false;
-    let sx=0, sy=0, sl=0, st=0;
-    const onDown = (e) => {
+    let sx=0, sy=0, bx=0, by=0;
+    const style = container.style;
+    handle.addEventListener('pointerdown', (e) => {
       down = true; dragging = false;
-      handle.style.cursor = 'grabbing';
+      sx = e.clientX; sy = e.clientY;
       const r = container.getBoundingClientRect();
-      sl = r.left; st = r.top; sx = e.clientX; sy = e.clientY;
-      e.preventDefault(); e.stopPropagation();
-    };
-    const onMove = (e) => {
+      bx = r.left; by = r.top;
+      handle.setPointerCapture(e.pointerId);
+    });
+    handle.addEventListener('pointermove', (e) => {
       if (!down) return;
       const dx = e.clientX - sx, dy = e.clientY - sy;
-      if (!dragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
-        dragging = true;
-        container.style.position = 'fixed';
-        container.style.right = 'auto';
-        container.style.bottom = 'auto';
-      }
+      if (!dragging && Math.hypot(dx,dy) > DRAG_THRESHOLD) dragging = true;
       if (dragging) {
-        container.style.left = `${sl + dx}px`;
-        container.style.top  = `${st + dy}px`;
-        positionBubble();
+        style.position = 'fixed';
+        style.left = Math.min(window.innerWidth-40, Math.max(-10, bx + dx)) + 'px';
+        style.top  = Math.min(window.innerHeight-40, Math.max(-10, by + dy)) + 'px';
       }
-    };
-    const onUp = (e) => {
-      if (!down) return;
-      down = false; handle.style.cursor = 'grab';
-      if (!dragging) { e.preventDefault(); e.stopPropagation(); showBubble(randomLine()); }
-    };
-    handle.addEventListener('mousedown', onDown, { passive:false });
-    window.addEventListener('mousemove', onMove, { passive:true });
-    window.addEventListener('mouseup', onUp, { passive:true });
-    handle.addEventListener('click', (e) => { if (!dragging) { e.stopPropagation(); showBubble(randomLine()); } });
-  })(root.querySelector('#pet-avatar'), root);
+    });
+    handle.addEventListener('pointerup', (e) => {
+      if (!dragging) showBubble(randomLine());
+      down = false; dragging = false;
+      handle.releasePointerCapture(e.pointerId);
+    });
+  })(avatar, wrap);
 
-  const mo = new MutationObserver(() => {
-    if (!document.getElementById('pet-root')) {
-      document.documentElement.appendChild(root);
-    }
+  function setAvatar(name) {
+    avatar.style.backgroundImage = `url(${chrome.runtime.getURL('assets/' + name)})`;
+  }
+
+  // runtime messages from background
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg?.type === 'PET_SAY' && typeof msg.text === 'string') showBubble(msg.text);
+    if (msg?.type === 'NUDGE') showBubble(randomLine());
+    if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) customLines = msg.lines;
+    if (msg?.type === 'PET_AVATAR_CHANGED' && typeof msg.name === 'string') setAvatar(msg.name);
   });
-  mo.observe(document.documentElement, { childList: true });
-
-  positionBubble();
 })();
