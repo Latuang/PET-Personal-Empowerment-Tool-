@@ -28,14 +28,14 @@
 .pet-bubble.right::before, .pet-bubble.right::after {
   content:""; position:absolute; top: var(--tail-y, 22px); left:-10px;
   border-top:8px solid transparent; border-bottom:8px solid transparent;
+  border-right:10px solid rgba(0,0,0,.12);
 }
-.pet-bubble.right::before { border-right:10px solid #fff; }
-.pet-bubble.right::after  { left:-11px; border-right:11px solid rgba(0,0,0,.14); filter: blur(.2px); }
+.pet-bubble.right::after { left:-9px; border-right-color:#fff; }
 
-.pet-bubble.left { right: calc(var(--avatar) + var(--gap)); }
+.pet-bubble.left  { right: calc(var(--avatar) + var(--gap)); }
 .pet-bubble.left::before, .pet-bubble.left::after {
   content:""; position:absolute; top: var(--tail-y, 22px); right:-10px;
   border-top:8px solid transparent; border-bottom:8px solid transparent;
+  border-left:10px solid rgba(0,0,0,.12);
 }
-.pet-bubble.left::before  { border-left:10px solid #fff; }
-.pet-bubble.left::after   { right:-11px; border-left:11px solid rgba(0,0,0,.14); filter: blur(.2px); }
+.pet-bubble.left::after { right:-9px; border-left-color:#fff; }
