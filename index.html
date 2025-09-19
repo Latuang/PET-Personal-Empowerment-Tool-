@@ -14,76 +14,67 @@
       --radius:14px; --shadow:0 10px 26px rgba(40,26,16,.10), 0 2px 10px rgba(40,26,16,.06);
     }
     html,body{height:100%}
-    body{
-      margin:0; color:var(--ink);
-      font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-      background:linear-gradient(180deg,var(--bg-a),var(--bg-b) 45%,var(--bg-c) 100%);
-      -webkit-font-smoothing:antialiased; overflow-x:hidden;
-    }
-    .wrap{max-width:1000px;margin:clamp(16px,4vh,28px) auto;padding:14px;background:#fffdfb;
-      border:1.5px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:grid;gap:12px;}
-    .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .title{display:flex;align-items:center;gap:8px}
-    .title h1{margin:0;font-weight:700;font-size:clamp(18px,2.1vw,22px)}
-    .subtitle{margin:2px 0 0;color:var(--ink-soft);font-size:12.5px}
-    .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .chip{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:#fff;
-      border:1.5px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.05);font-weight:600}
-    .chip input{width:58px;border:1.5px solid var(--line-strong);border-radius:8px;padding:6px 6px;text-align:center;font:600 13px/1 system-ui;outline:none;background:#fff}
-    .btn{appearance:none;border:1.5px solid var(--line-strong);background:linear-gradient(#ffffff,#faf7f4);
-      padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:700;color:#245e54;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-    .btn:active{transform:translateY(1px)}
-    .grid{display:grid;gap:12px;grid-template-columns:1.05fr .95fr;min-height:0}
-    @media (max-width:920px){.grid{grid-template-columns:1fr}}
-    .card{background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px;min-height:0;display:grid;gap:8px}
-    .card h2{margin:0;font-size:15px;display:flex;align-items:center;gap:6px}
-    .field{border:1.5px solid var(--line-strong);background:#fff;border-radius:12px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(0,0,0,.04)}
-    textarea{width:100%;min-height:138px;max-height:190px;resize:vertical;border:0;outline:0;padding:10px 12px 12px;background:#fff;color:var(--ink);
-      font:13px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace}
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .btn.peach{color:#6b2b24;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#ffb6a9,#ffc6c6) border-box;border:1.5px solid transparent}
-    .btn.mint{color:#20584d;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#b8ece2,#c7f2eb) border-box;border:1.5px solid transparent}
-    .status{margin-left:auto;color:#b22626;font-size:12px}
+    body{ margin:0; color:var(--ink);
+      font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: linear-gradient(180deg, var(--bg-a), var(--bg-b) 45%, var(--bg-c) 100%); -webkit-font-smoothing:antialiased; overflow-x:hidden;}
+    .wrap{ max-width: 1000px; margin: clamp(16px,4vh,28px) auto; padding:14px; background:#fffdfb;
+      border:1.5px solid var(--line); border-radius:18px; box-shadow:var(--shadow); display:grid; gap:12px;}
+    .top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .title{ display:flex; align-items:center; gap:8px; }
+    .title h1{ margin:0; font-weight:700; font-size: clamp(18px,2.1vw,22px); letter-spacing:.2px; }
+    .subtitle{ margin:2px 0 0; color:var(--ink-soft); font-size:12.5px }
+    .toolbar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .chip{ display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:999px; background:#fff; border:1.5px solid var(--line);
+      box-shadow: 0 2px 8px rgba(0,0,0,.05); font-weight:600; }
+    .chip input{ width:58px; border:1.5px solid var(--line-strong); border-radius:8px; padding:6px 6px; text-align:center; font:600 13px/1 system-ui; outline:none; background:#fff; }
+    .btn{ appearance:none; border:1.5px solid var(--line-strong); background: linear-gradient(#ffffff, #faf7f4);
+      padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:700; color:#245e54; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .grid{ display:grid; gap:12px; grid-template-columns: 1.05fr .95fr; min-height:0; }
+    @media (max-width: 920px){ .grid{ grid-template-columns:1fr; } }
+    .card{ background:#fffaf6; border:1.5px solid var(--line); border-radius: var(--radius); padding:12px; min-height:0; display:grid; gap:8px; }
+    .card h2{ margin:0; font-size:15px; display:flex; align-items:center; gap:6px; }
+    .field{ border:1.5px solid var(--line-strong); background:#fff; border-radius:12px; overflow:hidden; box-shadow: inset 0 1px 0 rgba(0,0,0,.04); }
+    textarea{ width:100%; min-height:138px; max-height:190px; resize:vertical; border:0; outline:0; padding:10px 12px 12px; background:#fff; color:var(--ink);
+      font: 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace; }
+    .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .btn.peach{ color:#6b2b24; background:linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#ffb6a9,#ffc6c6) border-box; border:1.5px solid transparent; }
+    .btn.mint{ color:#20584d; background:linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#b8ece2,#c7f2eb) border-box; border:1.5px solid transparent; }
+    .status{ margin-left:auto; color:#b22626; font-size:12px }
+    .timer{ display:grid; gap:10px; grid-template-rows:auto auto auto; background:#fffaf6; border:1.5px solid var(--line); border-radius: var(--radius); padding:12px; }
+    .lcd{ margin:2px auto 4px; border:1.5px solid var(--line-strong); background: linear-gradient(180deg,#fff7c5,#ffe38c);
+      color:#1e1a14; font: 800 26px/1 "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing:1.5px; padding:10px 12px 8px; border-radius:10px;
+      min-width:140px; text-align:center; box-shadow: inset 0 1px 0 #fffbe0, inset 0 -2px 0 #e7c86a; }
+    .actions{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+    .pill{ padding:8px 10px; border-radius:10px; border:1.5px solid var(--line-strong); background:#fff; cursor:pointer; font-weight:700; box-shadow:0 1px 6px rgba(0,0,0,.06); }
+    .pill.start{ background:#e7faf4; color:#24695d } .pill.pause{ background:#fff0ed; color:#7a3c34 } .pill.reset{ background:#fff8df; color:#6d5a23 }
+    .inputs{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .ibox{ background:#fff; border:1.5px solid var(--line-strong); border-radius:10px; padding:6px; text-align:center; }
+    .ibox label{ display:block; font-size:11px; color:var(--ink-soft); }
+    .ibox input{ width:100%; border:0; outline:0; background:transparent; font:700 16px/1 system-ui; color:#333; text-align:center; }
 
-    /* Timer */
-    .timer{display:grid;gap:10px;background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px}
-    .lcd{margin:2px auto 4px;border:1.5px solid var(--line-strong);background:linear-gradient(180deg,#fff7c5,#ffe38c);
-      color:#1e1a14;font:800 26px/1 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;letter-spacing:1.5px;
-      padding:10px 12px 8px;border-radius:10px;min-width:140px;text-align:center;box-shadow:inset 0 1px 0 #fffbe0,inset 0 -2px 0 #e7c86a}
-    .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-    .pill{padding:8px 10px;border-radius:10px;border:1.5px solid var(--line-strong);background:#fff;cursor:pointer;font-weight:700;box-shadow:0 1px 6px rgba(0,0,0,.06)}
-    .pill.start{background:#e7faf4;color:#24695d}.pill.pause{background:#fff0ed;color:#7a3c34}.pill.reset{background:#fff8df;color:#6d5a23}
-    .inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-    .ibox{background:#fff;border:1.5px solid var(--line-strong);border-radius:10px;padding:6px;text-align:center}
-    .ibox label{display:block;font-size:11px;color:var(--ink-soft)}
-    .ibox input{width:100%;border:0;outline:0;background:transparent;font:700 16px/1 system-ui;color:#333;text-align:center}
+    /* Pawprint */
+    .paw{ background:#fffaf6; border:1.5px solid var(--line); border-radius: var(--radius); padding:12px; display:grid; gap:10px; }
+    .kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+    .kpi{ background:#fff; border:1.5px solid var(--line-strong); border-radius:10px; padding:8px; text-align:center; }
+    .kpi strong{ font-size:14px } .kpi small{ display:block; font-size:11px; color:var(--ink-soft) }
+    .chartShell{ border:1.5px solid var(--line-strong); border-radius:10px; background:#fff; padding:8px; }
+    .chartViewport{ overflow:hidden; position:relative; height:88px }
+    .chart{ display:flex; align-items:flex-end; gap:10px; height:88px; padding:0 8px }
+    .bar{ width:18px; background:var(--accent-soft); border:1.5px solid #cfe5df; border-radius:6px; position:relative; overflow:hidden }
+    .bar>span{ position:absolute; bottom:0; left:0; right:0; height:0%; background:var(--accent); border-radius:6px }
+    .barLabel{ position:absolute; bottom:-18px; left:50%; transform:translateX(-50%); font-size:10px; color:#8a8078; white-space:nowrap }
 
-    /* Progress Pawprint */
-    .paw{background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px;display:grid;gap:10px}
-    .paw h2{margin:0;font-size:15px}
-    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-    .kpi{background:#fff;border:1.5px solid var(--line-strong);border-radius:10px;padding:8px;text-align:center}
-    .kpi strong{font-size:14px}.kpi small{display:block;font-size:11px;color:#7b716a}
-    .chartShell{border:1.5px solid var(--line-strong);border-radius:10px;background:#fff;padding:8px}
-    .chartViewport{overflow:hidden;position:relative;height:94px;cursor:grab;user-select:none;
-      background:linear-gradient(180deg,#fff,#fff),repeating-linear-gradient(90deg,transparent 0 32px,#f6f3f1 32px 33px);
-      border-radius:8px;border:1px dashed #eadfd8}
-    .chartViewport:active{cursor:grabbing}
-    .bars{position:absolute;left:0;top:6px;height:82px;display:flex;gap:8px;padding:0 8px}
-    .bar{width:18px;background:var(--accent-soft);border:1.5px solid #cfe5df;border-radius:6px;position:relative;overflow:hidden}
-    .bar>span{position:absolute;bottom:0;left:0;right:0;height:0%;background:var(--accent);border-radius:6px}
-    .barLabel{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:#8a8078;white-space:nowrap}
+    /* Choose Your PET — 3x2 grid, always filled */
+    .pets{ background:#fffaf6; border:1.5px solid var(--line); border-radius:var(--radius); padding:12px; display:grid; gap:8px }
+    .pets h2{ margin:0; font-size:15px }
+    .petGrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px }
+    .petOpt{ position:relative; border:1.5px solid var(--line-strong); background:#fff; border-radius:10px; padding:0; display:grid; place-items:center; cursor:pointer; transition:transform .05s; aspect-ratio:1/1; overflow:hidden }
+    .petOpt img{ width:100%; height:100%; object-fit:contain; display:block; mix-blend-mode:multiply }
+    .petOpt:hover{ transform:translateY(-1px) }
+    .petOpt.active{ outline:2px solid var(--accent); box-shadow:inset 0 0 0 2px #fff }
 
-    /* Choose Your PET — fixed 3×2 grid, bottom-right fill */
-    .pets{background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px;display:grid;gap:8px}
-    .pets h2{margin:0;font-size:15px}
-    .petGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;justify-items:stretch}
-    .petOpt{position:relative;border:1.5px solid var(--line-strong);background:#fff;border-radius:10px;padding:0;display:grid;place-items:center;cursor:pointer;transition:transform .05s;aspect-ratio:1/1;overflow:hidden}
-    .petOpt img{width:100%;height:100%;object-fit:contain;display:block;mix-blend-mode:multiply}
-    .petOpt:hover{transform:translateY(-1px)} .petOpt.active{outline:2px solid var(--accent);box-shadow:inset 0 0 0 2px #fff}
-
-    .left{display:grid;gap:12px;grid-template-rows:auto 1fr}
-    .right{display:grid;gap:12px;grid-template-rows:auto auto 1fr}
+    .left{ display:grid; gap:12px; grid-template-rows:auto 1fr }
+    .right{ display:grid; gap:12px; grid-template-rows:auto auto 1fr }
   </style>
 </head>
 <body>
@@ -108,9 +99,7 @@
       <div class="left">
         <section class="card">
           <h2>💬 Pep Lines</h2>
-          <div class="field">
-            <textarea id="lines" placeholder="One line per row&#10;e.g. Tiny step now—future you says thanks."></textarea>
-          </div>
+          <div class="field"><textarea id="lines" placeholder="One line per row&#10;e.g. Tiny step now—future you says thanks."></textarea></div>
           <div class="row">
             <button id="save" class="btn peach">Save to PET ✨</button>
             <button id="load" class="btn mint">Load from PET 🍃</button>
@@ -118,7 +107,7 @@
           </div>
         </section>
 
-        <section class="card paw">
+        <section class="paw">
           <h2>🐾 Progress Pawprint</h2>
           <div class="kpis">
             <div class="kpi"><strong id="kToday">0m</strong><small>Today</small></div>
@@ -127,23 +116,21 @@
             <div class="kpi"><strong id="kLongest">0</strong><small>Longest</small></div>
           </div>
           <div class="chartShell">
-            <div class="chartViewport" id="vp">
-              <div class="bars" id="bars"></div>
-            </div>
+            <div class="chartViewport"><div id="chart" class="chart" aria-hidden="true"></div></div>
           </div>
         </section>
       </div>
 
       <div class="right">
-        <section class="card timer">
-          <h2>🕹️ Focus Timer</h2>
-          <div class="lcd" id="readout">25:00</div>
+        <section class="card timer" aria-label="Focus Timer">
+          <h2>🕰️ Focus Timer</h2>
+          <div class="lcd" id="lcd">25:00</div>
           <div class="actions">
             <button class="pill start" id="start">Start</button>
             <button class="pill pause" id="pause">Pause</button>
             <button class="pill reset" id="reset">Reset</button>
-            <button class="pill" id="m5">5m</button>
-            <button class="pill" id="m25">25m</button>
+            <button class="pill" id="p5">5m</button>
+            <button class="pill" id="p25">25m</button>
           </div>
           <div class="inputs">
             <div class="ibox"><label>Hours</label><input id="h" type="number" min="0" value="0"></div>
@@ -152,34 +139,20 @@
           </div>
         </section>
 
-        <section class="card pets">
+        <section class="pets">
           <h2>🧸 Choose Your PET</h2>
-          <div class="petGrid" id="petGrid">
-            <!-- 3 × 2 exact grid -->
-            <button class="petOpt" data-name="icon128_fixed.png"><img alt="sausage dog" src="assets/icon128_fixed.png"></button>
-            <button class="petOpt" data-name="brown_dog_nobg.png"><img alt="brown dog" src="assets/brown_dog_nobg.png"></button>
-            <button class="petOpt" data-name="light_dog_nobg.png"><img alt="light dog" src="assets/light_dog_nobg.png"></button>
-            <button class="petOpt" data-name="orange_hams_nobg.png"><img alt="hamster" src="assets/orange_hams_nobg.png"></button>
-            <button class="petOpt" data-name="orange_cat_nobg.png"><img alt="orange cat" src="assets/orange_cat_nobg.png"></button>
-          </div>
+          <div id="petGrid" class="petGrid" role="listbox" aria-label="Choose your PET"></div>
         </section>
       </div>
     </div>
   </main>
 
   <script>
-    /* ---------- PET wiring ---------- */
-    const EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd"; // keep your extension ID
+    // ---------- Control page <-> Extension ----------
+    const EXT_ID = "REPLACE_ME_WITH_YOUR_EXTENSION_ID"; // <— set your ID!
     const statusEl = document.getElementById('status');
-    const linesEl  = document.getElementById('lines');
-
-    const say = (txt, ok = true) => {
-      statusEl.textContent = txt;
-      statusEl.style.color = ok ? '#0f7d4c' : '#b00020';
-    };
-    const canUseAPI = () =>
-      typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.sendMessage === "function";
-
+    const say = (txt, ok=true)=>{ statusEl.textContent = txt; statusEl.style.color = ok ? '#0f7d4c' : '#b00020'; };
+    const canUseAPI = () => typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.sendMessage === "function";
     function sendToPET(payload, cb){
       if(!canUseAPI()){ say("Chrome API not available. Use Google Chrome on desktop.", false); cb?.(null); return; }
       try{
@@ -190,125 +163,95 @@
       }catch(e){ say("Could not reach PET: "+(e?.message||e), false); cb?.(null); }
     }
 
-    /* ---- Pep lines ---- */
-    document.getElementById('save').onclick = () => {
+    // ----- Pep lines -----
+    const linesEl = document.getElementById('lines');
+    document.getElementById('save').onclick=()=>{
       const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
       if(!lines.length) return say("Add at least one line.", false);
-      const last = lines[lines.length - 1];
-
-      // Use the current API: SAVE_LINES then PET_SAY_NOW
-      sendToPET({ type: "SAVE_LINES", lines }, (r)=>{
-        if(!r?.ok) { say("PET error: "+(r?.error||"Unknown"), false); return; }
-        sendToPET({ type: "PET_SAY_NOW", text: last }, (r2)=>{
-          if(r2?.ok){ say(`Saved & said: “${last}”`); sprinkleConfetti(); }
-          else { say("Saved, but could not trigger speech.", false); }
-        });
+      const last = lines[lines.length-1];
+      sendToPET({ type:"PET_ADD_LINES", lines }, (r)=> {
+        if(!r?.ok) return say("PET error: "+(r?.error||"Unknown"), false);
+        sendToPET({ type:"PET_SAY_NOW", text:last });
+        say(`Saved & said: “${last}”`);
+      });
+    };
+    document.getElementById('load').onclick=()=>{
+      sendToPET({ type:"PET_GET_LINES" }, (r)=>{
+        if(!r?.ok) return say("PET error: "+(r?.error||"Unknown"), false);
+        linesEl.value = (r.lines||[]).join('\n'); say(`Connected. Load or add lines.`);
       });
     };
 
-    document.getElementById('load').onclick = () => {
-      sendToPET({ type: "LOAD_LINES" }, (r)=>{
-        if(!r?.ok) { say("PET error: "+(r?.error||"Unknown"), false); return; }
-        linesEl.value = (r.lines||[]).join('\n');
-        say(`Loaded ${r.lines?.length||0} lines from PET.`);
+    // ----- Frequency -----
+    const freqEl = document.getElementById('freq');
+    document.getElementById('freqSave').onclick=()=>{
+      const m = Math.max(1, parseInt(freqEl.value||'45',10));
+      sendToPET({ type:"SET_FREQUENCY", minutes:m }, (r)=>{
+        if(r?.ok) say(`Saved. PET will nudge every ${m} min.`);
+        else say("Could not save frequency.", false);
       });
     };
 
-    /* ---- Frequency ---- */
-    const freqInput = document.getElementById('freq');
-    document.getElementById('freqSave').onclick = () => {
-      const minutes = Math.max(1, Math.floor(+freqInput.value||45));
-      sendToPET({ type: "SET_FREQUENCY", minutes }, (r)=>{
-        if(r?.ok) say(`Talk every ${r.minutes} min saved.`);
-        else say("Couldn't save frequency.", false);
-      });
-    };
-
-    /* ---- Pets (3×2 grid) ---- */
+    // ----- PET avatars — 3x2, filled -----
+    const PETS = [
+      "brown_dog_nobg.png",
+      "pet.png",                 // sausage dog (replaces icon128)
+      "light_dog_nobg.png",
+      "orange_hams_nobg.png",
+      "orange_cat_nobg.png",
+      "icon128_fixed.png"        // optional alt dog
+    ];
     const petGrid = document.getElementById('petGrid');
-    function setActive(name){
-      [...petGrid.querySelectorAll('.petOpt')].forEach(b=>b.classList.toggle('active', b.dataset.name===name));
-    }
-    petGrid.addEventListener('click', (e)=>{
-      const btn = e.target.closest('.petOpt'); if(!btn) return;
-      const name = btn.dataset.name;
-      sendToPET({ type: "SET_AVATAR", name }, (r)=>{
-        if(r?.ok) setActive(name);
-        else say("Could not update pet", false);
+    let currentAvatar = null;
+    function renderPets(){
+      petGrid.innerHTML = "";
+      PETS.forEach(name=>{
+        const btn = document.createElement('button');
+        btn.className = 'petOpt' + (name===currentAvatar?' active':'');
+        btn.setAttribute('role','option');
+        btn.setAttribute('aria-selected', name===currentAvatar ? 'true':'false');
+        const img = document.createElement('img');
+        img.alt = name.replace(/[_-]/g,' ').replace(/\..+$/,'');
+        // display images from your repo (page), selection only; extension loads from /assets inside the extension
+        img.src = 'assets/' + name;
+        btn.appendChild(img);
+        btn.onclick = () => {
+          currentAvatar = name;
+          [...petGrid.children].forEach(c=>c.classList.remove('active'));
+          btn.classList.add('active');
+          sendToPET({ type:"SET_AVATAR", name });
+        };
+        petGrid.appendChild(btn);
       });
-    });
+    }
 
-    /* ---- Progress Pawprint ---- */
-    function renderStats(stats){
-      // KPIs
-      const todayMin = Math.round((stats.todaySeconds||0)/60);
-      const weekMin = Math.round((stats.weekly||[]).reduce((a,b)=>a+b.seconds,0)/60);
-      document.getElementById('kToday').textContent = `${todayMin}m`;
-      document.getElementById('k7').textContent = `${weekMin}m`;
-      document.getElementById('kStreak').textContent = stats.currentStreak||0;
-      document.getElementById('kLongest').textContent = stats.longestStreak||0;
-
-      // 7-day bars
-      const barsEl = document.getElementById('bars'); barsEl.innerHTML = '';
-      const max = Math.max(1, ...stats.weekly.map(d=>d.seconds));
-      stats.weekly.forEach(d=>{
+    // ----- Pawprint chart -----
+    function formatMin(sec){ return Math.round(sec/60) + 'm'; }
+    function drawChart(weekly){
+      const c = document.getElementById('chart');
+      c.innerHTML = '';
+      weekly.forEach(d=>{
         const bar = document.createElement('div'); bar.className='bar';
-        const fill = document.createElement('span');
-        fill.style.height = `${Math.round((d.seconds/max)*100)}%`;
-        bar.appendChild(fill);
-        const lbl = document.createElement('div'); lbl.className='barLabel';
-        lbl.textContent = d.date.slice(5); bar.appendChild(lbl);
-        barsEl.appendChild(bar);
+        const fill = document.createElement('span'); fill.style.height = Math.min(100, (d.seconds/60)) + '%';
+        const label = document.createElement('div'); label.className='barLabel'; label.textContent = d.date.slice(5).replace('-','/');
+        bar.appendChild(fill); bar.appendChild(label); c.appendChild(bar);
       });
     }
 
-    /* ---- Confetti ---- */
-    function sprinkleConfetti(){
-      const N=24;
-      for(let i=0;i<N;i++){
-        const s=document.createElement('div');
-        const size=6+Math.random()*8;
-        s.textContent=['✨','🐶','🌟','💖','🍀'][i%5];
-        s.style.position='fixed'; s.style.zIndex=9999; s.style.left=(Math.random()*100)+'vw'; s.style.top='-10vh';
-        s.style.fontSize=size+'px'; s.style.transition='transform 1.2s ease-out, opacity 1.2s ease-out';
-        document.body.appendChild(s);
-        requestAnimationFrame(()=>{
-          s.style.transform=`translateY(${110+Math.random()*20}vh) rotate(${(Math.random()-.5)*360}deg)`;
-          s.style.opacity='0';
-        });
-        setTimeout(()=>s.remove(),1300);
+    // ----- Initial load -----
+    sendToPET({ type:"GET_SETTINGS" }, (r)=>{
+      if(!r?.ok) return;
+      freqEl.value = r.minutes || 45;
+      currentAvatar = r.avatar || PETS[0];
+      renderPets();
+      if (r.stats){
+        document.getElementById('kToday').textContent   = formatMin(r.stats.todaySeconds);
+        document.getElementById('k7').textContent       = formatMin(r.stats.weekly.reduce((a,b)=>a+b.seconds,0));
+        document.getElementById('kStreak').textContent  = r.stats.currentStreak;
+        document.getElementById('kLongest').textContent = r.stats.longestStreak;
+        drawChart(r.stats.weekly);
       }
-    }
-
-    /* ---- Init: fetch minutes, avatar, stats ---- */
-    window.addEventListener('DOMContentLoaded', ()=>{
-      if(!canUseAPI()){ say("Chrome API not available. Use Google Chrome on desktop.", false); return; }
-      sendToPET({ type:"GET_SETTINGS" }, (r)=>{
-        if(r?.ok){
-          if(r.minutes) freqInput.value = r.minutes;
-          if(r.avatar) setActive(r.avatar);
-          if(r.stats) renderStats(r.stats);
-          say("Connected to PET.");
-        }else{
-          // Fallback probe to older API names if needed
-          sendToPET({ type:"PET_GET_LINES" }, (r2)=>{
-            say(r2?.ok ? "Connected to PET." : "Could not connect to PET.", !!r2?.ok);
-          });
-        }
-      });
     });
-
-    /* ---- Minimal timer (local only) ---- */
-    const h=document.getElementById('h'), m=document.getElementById('m'), s=document.getElementById('s'), readout=document.getElementById('readout');
-    let t=null,total=1500,remaining=total; updateReadout();
-    function updateReadout(){ const mm=Math.floor(remaining/60), ss=remaining%60; readout.textContent=`${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`; }
-    function tick(){ if(remaining>0){ remaining--; updateReadout(); } else { clearInterval(t); t=null; sprinkleConfetti(); } }
-    function rebuild(){ const hh=Math.max(0,parseInt(h.value||'0',10)); const mm=Math.max(0,parseInt(m.value||'0',10)); const ss=Math.max(0,parseInt(s.value||'0',10)); total=hh*3600+mm*60+ss; remaining=total; updateReadout(); }
-    document.getElementById('start').onclick=()=>{ if(t) return; rebuild(); t=setInterval(tick,1000); };
-    document.getElementById('pause').onclick=()=>{ if(t){ clearInterval(t); t=null; } };
-    document.getElementById('reset').onclick=()=>{ clearInterval(t); t=null; rebuild(); };
-    document.getElementById('m5').onclick = ()=>{ h.value=0;m.value=5;s.value=0; rebuild(); };
-    document.getElementById('m25').onclick= ()=>{ h.value=0;m.value=25;s.value=0; rebuild(); };
   </script>
 </body>
 </html>
