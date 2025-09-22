@@ -20,19 +20,19 @@
       background:linear-gradient(180deg,var(--bg-a),var(--bg-b) 45%,var(--bg-c) 100%);
       -webkit-font-smoothing:antialiased; overflow-x:hidden;
     }
-    .wrap{max-width:1100px;margin:clamp(16px,4vh,28px) auto;padding:14px;background:#fffdfb;
+    .wrap{max-width:1080px;margin:clamp(16px,4vh,28px) auto;padding:14px;background:#fffdfb;
       border:1.5px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:grid;gap:12px}
     .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .title{display:flex;align-items:center;gap:8px}
-    .title h1{margin:0;font-weight:700;font-size:clamp(18px,2.1vw,22px)}
-    .subtitle{margin:2px 0 0;color:var(--ink-soft);font-size:12.5px}
+    .title{display:flex;gap:10px;align-items:baseline}
+    .title h1{margin:0;font-weight:800;font-size:clamp(18px,2.1vw,22px)}
+    .subtitle{color:var(--ink-soft);font-size:12.5px}
     .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .chip{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:#fff;border:1.5px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.05);font-weight:600}
     .chip input{width:58px;border:1.5px solid var(--line-strong);border-radius:8px;padding:6px;text-align:center;font:600 13px/1 system-ui;background:#fff}
     .btn{appearance:none;border:1.5px solid var(--line-strong);background:linear-gradient(#fff,#faf7f4);padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:700;color:#245e54;box-shadow:0 2px 8px rgba(0,0,0,.06)}
     .btn:active{transform:translateY(1px)}
     .grid{display:grid;gap:12px;grid-template-columns:1.05fr .95fr;min-height:0}
-    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+    @media (max-width:920px){.grid{grid-template-columns:1fr}}
 
     .card,.timer,.paw,.pets{background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px}
     .card{display:grid;gap:8px;min-height:0}
@@ -59,16 +59,16 @@
     .paw .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
     .stat{background:#fff;border:1.5px solid var(--line-strong);border-radius:12px;padding:10px;text-align:center}
     .stat b{display:block;font-weight:800;font-size:16px}
-    .chart{margin-top:8px;background:#fff;border:1.5px dashed var(--line-strong);border-radius:12px;padding:12px 12px 16px;height:120px;display:flex;gap:14px;align-items:flex-end;justify-content:space-between}
-    .bar{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:26px}
-    .bar span{width:100%;flex:0 0 auto;background:#dff0ea;border:1.5px solid #c7e3db;border-radius:8px;transition:height .2s}
+    .chart{margin-top:8px;background:#fff;border:1.5px dashed var(--line-strong);border-radius:12px;padding:12px;height:110px;display:flex;gap:14px;align-items:flex-end;justify-content:space-between}
+    .bar{flex:1;min-width:16px;display:flex;flex-direction:column;align-items:center;gap:6px}
+    .bar span{display:block;width:100%;height:10px;background:#dff0ea;border:1.5px solid #c7e3db;border-radius:10px}
     .bar span.fill{background:#bfe5d7}
-    .bar .lbl{font-size:11px;color:#7d8b84}
+    .bar .lbl{font-size:11.5px;color:#6d6b66}
 
-    .pets-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:118px;gap:10px;justify-content:start}
+    .pets-grid{display:grid;grid-template-columns:repeat(3,120px);grid-auto-rows:120px;gap:10px;justify-content:start}
     .pet-tile{display:flex;align-items:center;justify-content:center;background:#fff;border:1.5px solid var(--line-strong);border-radius:12px;cursor:pointer;transition:transform .05s ease}
     .pet-tile:active{transform:translateY(1px)}
-    .pet-tile img{width:84px;height:84px;object-fit:contain;image-rendering:-webkit-optimize-contrast}
+    .pet-tile img{width:86px;height:86px;object-fit:contain;image-rendering:-webkit-optimize-contrast}
     .pet-tile.sel{outline:3px solid #2f8d7c; box-shadow:0 0 0 2px #cfeae6 inset}
 
     .mini{font-size:12px;color:#7d8b84}
@@ -139,7 +139,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   </div>
 
 <script>
-  // ---------- helpers (web + extension) ----------
+  // ---------- capability helpers (works with & without the Chrome extension) ----------
   const HAS_CHROME = !!(window.chrome && chrome.storage && chrome.storage.local);
   const SESSIONS_KEY = 'petSessions'; // [{ts:number(seconds), seconds:number}]
   const PET_AVATAR   = 'petAvatar';
@@ -154,19 +154,20 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     statusEl.style.color = ok ? '#0f7d4c' : '#b22626';
     if (msg) setTimeout(()=> setStatus(''), 2500);
   }
-
-  function lsGet(key, fallback) {
-    try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
-    catch { return fallback; }
-  }
-  function lsSet(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+  function lsGet(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
+  function lsSet(key, val)      { localStorage.setItem(key, JSON.stringify(val)); }
 
   // ---------- pep lines ----------
   const linesEl = qs('lines');
   qs('saveLines').addEventListener('click', () => {
     const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
     lsSet(PET_LINES, lines);
-    if (HAS_CHROME) chrome.storage.local.set({ [PET_LINES]: lines, petSpeakNow: { text: lines[lines.length-1] || 'You’ve got this.', at: Date.now() }});
+    if (HAS_CHROME) {
+      chrome.storage.local.set({
+        [PET_LINES]: lines,
+        petSpeakNow: { text: lines[lines.length-1] || 'You’ve got this.', at: Date.now() }
+      });
+    }
     setStatus('Saved. PET will nudge with your lines.');
   });
   qs('loadLines').addEventListener('click', () => {
@@ -207,22 +208,11 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
 
   function tick(){
     if (remaining>0){ remaining--; lcd.textContent = fmt(remaining); }
-    else {
-      stopTimer();
-      finishSession();
-    }
+    else { stopTimer(); finishSession(); }
   }
-  function startTimer(){
-    stopTimer();
-    recalcFromInputs();
-    if (remaining<=0) remaining = 1500; // default 25m
-    countdown = setInterval(tick, 1000);
-  }
+  function startTimer(){ stopTimer(); recalcFromInputs(); if (remaining<=0) remaining = 1500; countdown = setInterval(tick, 1000); }
   function stopTimer(){ if (countdown){ clearInterval(countdown); countdown=null; } }
-  function resetTimer(){
-    stopTimer();
-    remaining = 1500; syncInputsToRemaining();
-  }
+  function resetTimer(){ stopTimer(); remaining = 1500; syncInputsToRemaining(); }
   function setQuick(min){ hIn.value = 0; mIn.value = min; sIn.value = 0; recalcFromInputs(); }
 
   qs('start').addEventListener('click', startTimer);
@@ -278,9 +268,9 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
       week += sec;
       days.push({ date: d.toLocaleDateString(undefined,{weekday:'short'}), minutes: Math.round(sec/60) });
     }
-    // streaks (count back from today)
+    // streaks
     let streak=0, longest=0, cursor=todayStart;
-    while ((perDay.get(dayKey(cursor))||0) > 0) { streak++; cursor -= 86400000; longest=Math.max(longest,streak); }
+    while ((perDay.get(dayKey(cursor))||0) > 0) { streak++; cursor -= 86400000; longest = Math.max(longest, streak); }
     return { today:Math.round(today/60), week:Math.round(week/60), streak, longest, bars: days };
   }
 
@@ -305,8 +295,8 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     const chart = qs('chart'); chart.innerHTML='';
     for (const d of st.bars){
       const bar = document.createElement('div'); bar.className='bar';
-      const span = document.createElement('span'); span.style.height = (8 + Math.min(100, d.minutes))*1.0 + 'px';
-      if (d.minutes>0) span.classList.add('fill');
+      const span = document.createElement('span'); if (d.minutes>0) span.classList.add('fill');
+      span.style.height = (8 + Math.min(100, d.minutes)) + 'px';
       const lbl = document.createElement('div'); lbl.className='lbl'; lbl.textContent = `${d.date} · ${d.minutes}m`;
       bar.appendChild(span); bar.appendChild(lbl); chart.appendChild(bar);
     }
@@ -330,7 +320,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     setStatus('Saved. PET will nudge every '+val+' min.');
   });
 
-  // ---------- pet chooser (3×2, left aligned) ----------
+  // ---------- pet chooser (3×2, with image fallback for GitHub Pages ⇢ Extension) ----------
   const PETS = [
     { file:'brown_dog_nobg.png',   label:'Brown pup' },
     { file:'pet.png',              label:'Sausage dog' },
@@ -346,7 +336,20 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     petGrid.innerHTML='';
     PETS.forEach(p=>{
       const div=document.createElement('div'); div.className='pet-tile';
-      const img=document.createElement('img'); img.alt=p.label; img.src = p.file; // <— root files
+      const img=document.createElement('img'); img.alt=p.label;
+
+      // ---- image loading with fallback (as requested) ----
+      // old
+      // img.src = 'assets/' + name;
+      //
+      // new — try repo root first, then fall back to extension asset
+      const EXT_ID = "libkjkfhpilbfmcbknhnhnfejacjkccd"; // keep your id
+      const extAsset = (n)=> `chrome-extension://${EXT_ID}/assets/${n}`;
+      const name = p.file;
+      img.src = `./${name}`;
+      img.onerror = () => { img.onerror = null; img.src = extAsset(name); };
+      // ----------------------------------------------------
+
       div.appendChild(img);
       if (p.file===saved) markSelected(div);
       div.addEventListener('click', ()=>{
@@ -356,8 +359,6 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
       });
       petGrid.appendChild(div);
     });
-    // if nothing selected yet, pick first
-    if (![...petGrid.children].some(c=>c.classList.contains('sel'))) petGrid.children[0]?.classList.add('sel');
   }
 
   (function init(){
