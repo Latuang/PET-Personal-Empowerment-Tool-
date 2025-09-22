@@ -31,9 +31,17 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   broadcastToAll({ type: 'NUDGE' });
 });
 
-// Keep tabs in sync with storage changes (lines + avatar → optional)
+// Keep tabs in sync with storage changes (lines + avatar)
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
+
+  if (changes.petCustomLines) {
+    const lines = Array.isArray(changes.petCustomLines.newValue)
+      ? changes.petCustomLines.newValue : [];
+    // tell all tabs their line pool changed (mirrors older working build)
+    broadcastToAll({ type: 'LINES_UPDATED', lines });
+  }
+
   if (changes[AVATAR_KEY]) {
     broadcastToAll({ type: 'PET_AVATAR_CHANGED', name: changes[AVATAR_KEY].newValue || "brown_dog_nobg.png" });
   }
@@ -52,7 +60,7 @@ function addSession(seconds, tsMs = Date.now(), cb) {
 // Messages from page/popup
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === 'RESCHEDULE') {
-    chrome.storage.local.get(['periodMinutes'], (cfg)=> scheduleAlarm(cfg.periodMinutes || DEFAULT_PERIOD_MIN));
+    chrome.storage.local.get([PERIOD_KEY], (cfg)=> scheduleAlarm(cfg[PERIOD_KEY] || DEFAULT_PERIOD_MIN));
   } else if (msg?.type === 'ADD_SESSION' && msg.seconds) {
     addSession(Number(msg.seconds));
   }
