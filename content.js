@@ -67,7 +67,6 @@ function positionBubble() {
   const preferRight = spaceRight >= 220 || spaceRight > spaceLeft;
   bubble.classList.toggle('right', preferRight);
   bubble.classList.toggle('left', !preferRight);
-  // snap just above mouth area
   bubble.style.bottom = '92px';
   bubble.style.right  = preferRight ? '0' : 'auto';
   bubble.style.left   = preferRight ? 'auto' : '0';
@@ -175,13 +174,12 @@ chrome.storage.local.get([KEYS.AVATAR, KEYS.LINES, KEYS.SPEAK, KEYS.POS], (cfg)=
   // If the control panel just wrote a speak-now, show it ONCE
   const sp = cfg[KEYS.SPEAK];
   if (sp && sp.text && Date.now() - (sp.at||0) < 8000) {
-    speak(sp.text);              // show once
-    // Clear it so a late listener doesn't repeat
-    chrome.storage.local.set({ [KEYS.SPEAK]: null });
+    speak(sp.text);
+    chrome.storage.local.set({ [KEYS.SPEAK]: null }); // clear so it doesn't repeat
   }
 });
 
-// ---------- Live updates ----------
+// ---------- Live updates from storage ----------
 chrome.storage.onChanged.addListener((changes, area)=>{
   if (area !== 'local') return;
 
@@ -196,20 +194,66 @@ chrome.storage.onChanged.addListener((changes, area)=>{
     clickIndex = 0; // restart the cycle
   }
 
-  // Speak-now set by the control page (save button) or bg
   if (changes[KEYS.SPEAK]) {
     const v = changes[KEYS.SPEAK].newValue;
     if (v && v.text) {
-      speak(v.text);                   // show once
+      speak(v.text);                   
       chrome.storage.local.set({ [KEYS.SPEAK]: null }); // prevent repeats
     }
   }
 });
 
-// ---------- Gentle nudges from bg.js (random line) ----------
+// ---------- Background nudges ----------
 chrome.runtime.onMessage.addListener((msg)=>{
   if (msg?.type === 'NUDGE') {
     const pool = customLines.length ? customLines : ["Time for a tiny step?"];
     speak(pool[Math.floor(Math.random()*pool.length)]);
+  }
+});
+
+// ---------- BRIDGE: messages from index.html ----------
+window.addEventListener('message', (e) => {
+  const d = e.data || {};
+  // Save pep lines
+  if (d.type === 'PET_ADD_LINES' && Array.isArray(d.lines)) {
+    const cleaned = d.lines.map(s => String(s).trim()).filter(Boolean);
+    chrome.storage.local.get([KEYS.LINES], (cfg) => {
+      const current = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
+      // merge + dedupe, preserve order (existing first)
+      const merged = [...current];
+      for (const s of cleaned) if (!merged.includes(s)) merged.push(s);
+      chrome.storage.local.set({ [KEYS.LINES]: merged }, () => {
+        customLines = merged;
+        clickIndex = 0;
+        // speak the last one ONCE (silent)
+        const last = cleaned.at(-1);
+        if (last) speak(last);
+        // echo back to the page in case it wants to render them
+        window.postMessage({ type:'PET_LINES_RESPONSE', lines: merged }, '*');
+      });
+    });
+  }
+  // Ask for current lines
+  else if (d.type === 'PET_GET_LINES') {
+    chrome.storage.local.get([KEYS.LINES], (cfg) => {
+      const lines = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
+      window.postMessage({ type:'PET_LINES_RESPONSE', lines }, '*');
+    });
+  }
+  // Speak-now (no AI voice)
+  else if (d.type === 'PET_SAY_NOW' && typeof d.text === 'string' && d.text.trim()) {
+    speak(d.text.trim());
+  }
+  // Change avatar (index keeps the UI; we persist here)
+  else if (d.type === 'PET_SET_AVATAR' && typeof d.file === 'string') {
+    chrome.storage.local.set({ [KEYS.AVATAR]: d.file });
+  }
+  // Mirror a completed session to bg (for stats)
+  else if (d.type === 'PET_ADD_SESSION' && Number.isFinite(d.seconds)) {
+    chrome.runtime.sendMessage({ type:'ADD_SESSION', seconds: Math.max(1, Math.floor(d.seconds)) });
+  }
+  // Reschedule alarm (period changed in control panel)
+  else if (d.type === 'PET_RESCHEDULE') {
+    chrome.runtime.sendMessage({ type:'RESCHEDULE' });
   }
 });
