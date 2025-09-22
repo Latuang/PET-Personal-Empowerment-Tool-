@@ -5,7 +5,6 @@
   <title>PET Control Panel</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    /* your existing CSS (same visual as you showed) */
     :root{--bg-a:#fff4ea;--bg-b:#fde9f2;--bg-c:#e9fbf1;--ink:#2b2723;--ink-soft:#7b716a;--line:#d9cdc5;--line-strong:#cdbfb6;--accent:#2f8d7c;--accent-soft:#e8f3f0;--peach:#ffa191;--mint:#6cc7b3;--honey:#ffd674;--radius:14px;--shadow:0 10px 26px rgba(40,26,16,.10),0 2px 10px rgba(40,26,16,.06)}
     html,body{height:100%}body{margin:0;color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(180deg,var(--bg-a),var(--bg-b) 45%,var(--bg-c) 100%);-webkit-font-smoothing:antialiased;overflow-x:hidden}
     .wrap{max-width:1080px;margin:clamp(16px,4vh,28px) auto;padding:14px;background:#fffdfb;border:1.5px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:grid;gap:12px}
@@ -88,7 +87,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   </div>
 
 <script>
-  // ---------- minimal “bridge” the content script listens for ----------
+  // ---- bridge keys + helpers ----
   const SESSIONS_KEY = 'petSessions';
   const PET_AVATAR   = 'petAvatar';
   const PERIOD_KEY   = 'periodMinutes';
@@ -102,20 +101,20 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   const lsGet = (k,f)=>{ try{return JSON.parse(localStorage.getItem(k)) ?? f;}catch{return f;} };
   const lsSet = (k,v)=> localStorage.setItem(k, JSON.stringify(v));
 
-  // ----- Pep lines -----
-  qs('saveLines').addEventListener('click', ()=>{
+  // ---------- pep lines (via bridge) ----------
+  qs('saveLines').addEventListener('click', () => {
     const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
-    lsSet(PET_LINES, lines); // local copy
-    window.postMessage({ type:'PET_ADD_LINES', lines }, '*');
-    if (lines.length) window.postMessage({ type:'PET_SAY_NOW', text: lines[lines.length-1] }, '*');
+    lsSet(PET_LINES, lines); // fallback copy for the website
+    window.postMessage({ type: 'PET_ADD_LINES', lines }, '*');                          // send to content.js
+    window.postMessage({ type: 'PET_SAY_NOW', text: lines.at(-1) || 'You’ve got this.' }, '*');
     setStatus('Saved. PET will nudge with your lines.');
   });
 
-  qs('loadLines').addEventListener('click', ()=>{
-    window.postMessage({ type:'PET_GET_LINES' }, '*');
+  qs('loadLines').addEventListener('click', () => {
+    window.postMessage({ type: 'PET_GET_LINES' }, '*');
   });
 
-  window.addEventListener('message', (e)=>{
+  window.addEventListener('message', (e) => {
     const d = e.data;
     if (d?.type === 'PET_LINES_RESPONSE' && Array.isArray(d.lines)) {
       linesEl.value = d.lines.join('\n');
@@ -123,10 +122,10 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     }
   });
 
-  // ----- Timer (unchanged from your working version) -----
+  // ---------- timer (unchanged) ----------
   let countdown = null, remaining = 1500;
   const lcd = qs('lcd'), hIn = qs('h'), mIn = qs('m'), sIn = qs('s');
-  const fmt = (sec)=>{ const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); };
+  function fmt(sec){ const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
   function syncInputsToRemaining(){ const h=Math.floor(remaining/3600), m=Math.floor((remaining%3600)/60), s=remaining%60; hIn.value=h; mIn.value=m; sIn.value=s; lcd.textContent=fmt(remaining); }
   function recalcFromInputs(){ const h=Math.max(0,parseInt(hIn.value||'0',10)), m=Math.max(0,parseInt(mIn.value||'0',10)), s=Math.max(0,parseInt(sIn.value||'0',10)); remaining=h*3600+m*60+s; lcd.textContent=fmt(remaining); }
   [hIn,mIn,sIn].forEach(el=> el.addEventListener('change', recalcFromInputs));
@@ -142,7 +141,19 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   qs('m25').addEventListener('click',()=> setQuick(25));
   syncInputsToRemaining();
 
+  function finishSession(){
+    const seconds = Math.max(1, parseInt(hIn.value||'0',10)*3600 + parseInt(mIn.value||'0',10)*60 + parseInt(sIn.value||'0',10));
+    addSession(seconds);
+    const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const text  = (lines.length ? lines[Math.floor(Math.random()*lines.length)] : "Nice focus! Another step done.");
+    window.postMessage({ type: 'PET_SAY_NOW', text }, '*');
+    setStatus('Nice! Session added.');
+    resetTimer();
+  }
+
+  // ---------- progress pawprint ----------
   function startOfDay(ts){ const d=new Date(ts); d.setHours(0,0,0,0); return d.getTime(); }
+  function dayKey(ts){ return new Date(startOfDay(ts)).toISOString().slice(0,10); }
   function addSession(seconds, atMs=Date.now()){
     const local = lsGet(SESSIONS_KEY, []);
     local.push({ ts: Math.floor(atMs/1000), seconds: Math.max(1, Math.floor(seconds)) });
@@ -150,18 +161,6 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     window.postMessage({ type:'PET_ADD_SESSION', seconds: Math.max(1, Math.floor(seconds)) }, '*');
     updateStatsFromStores();
   }
-  function finishSession(){
-    const seconds = Math.max(1, parseInt(hIn.value||'0',10)*3600 + parseInt(mIn.value||'0',10)*60 + parseInt(sIn.value||'0',10));
-    addSession(seconds);
-    const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
-    const text  = (lines.length ? lines[Math.floor(Math.random()*lines.length)] : "Nice focus! Another step done.");
-    window.postMessage({ type:'PET_SAY_NOW', text }, '*');
-    setStatus('Nice! Session added.');
-    resetTimer();
-  }
-
-  // ----- Stats (7 days) — same as your recent build -----
-  function dayKey(ts){ return new Date(startOfDay(ts)).toISOString().slice(0,10); }
   function computeStats(sessions){
     const now = Date.now(), todayStart = startOfDay(now);
     let today = 0, week = 0;
@@ -199,7 +198,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   function updateStatsFromStores(){ renderStats(computeStats(lsGet('petSessions', []))); }
   updateStatsFromStores();
 
-  // ----- Period (nudge frequency) -----
+  // ---------- period (nudge frequency) ----------
   const periodEl = qs('period'); periodEl.value = lsGet(PERIOD_KEY, 45);
   qs('savePeriod').addEventListener('click', ()=>{
     const val = Math.max(1, parseInt(periodEl.value||'45',10));
@@ -208,7 +207,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     setStatus('Saved. PET will nudge every '+val+' min.');
   });
 
-  // ----- Avatar picker (KEEPING your working behavior) -----
+  // ---------- avatar chooser (unchanged; posts to bridge) ----------
   const PETS = [
     { file:'brown_dog_nobg.png',   label:'Brown pup' },
     { file:'pet.png',              label:'Sausage dog' },
@@ -224,14 +223,14 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
       const div=document.createElement('div'); div.className='pet-tile';
       const img=document.createElement('img'); img.alt=p.label;
       const name=p.file;
-      img.src = `./${name}`; // page asset first…
+      img.src = `./${name}`; // repo root first
       img.onerror = () => { img.onerror = null; img.src = `chrome-extension://libkjkfhpilbfmcbknhnhnfejacjkccd/assets/${name}`; };
       div.appendChild(img);
       if (p.file===saved) markSelected(div);
       div.addEventListener('click', ()=>{
         markSelected(div);
-        lsSet(PET_AVATAR, p.file);                            // local copy
-        window.postMessage({ type:'PET_SET_AVATAR', file:p.file }, '*');  // tell extension
+        lsSet(PET_AVATAR, p.file);
+        window.postMessage({ type:'PET_SET_AVATAR', file:p.file }, '*');
       });
       petGrid.appendChild(div);
     });
