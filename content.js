@@ -1,6 +1,5 @@
 // ===== Floating PET on web pages (content script) =====
 
-// Keys shared with index.html / bg.js
 const KEYS = {
   AVATAR: 'petAvatar',          // e.g. "brown_dog_nobg.png"
   LINES:  'petCustomLines',     // string[]
@@ -9,11 +8,11 @@ const KEYS = {
   POS:    'petPos'              // { x, y }
 };
 
-// ---------- DOM: pet container, avatar image, speech bubble ----------
+// ---------- DOM ----------
 const wrap = document.createElement('div');
 wrap.style.cssText = `
   position:fixed; z-index:2147483647; inset:auto 18px 18px auto;
-  width:96px; height:96px; display:flex; align-items:flex-end; justify-content:center;
+  width:110px; height:110px; display:flex; align-items:flex-end; justify-content:center;
   pointer-events:auto;
 `;
 wrap.setAttribute('data-pet', 'wrap');
@@ -21,47 +20,76 @@ wrap.setAttribute('data-pet', 'wrap');
 const img = document.createElement('img');
 img.alt = 'PET avatar';
 img.style.cssText = `
-  width:96px; height:96px; object-fit:contain; cursor:grab;
+  width:100px; height:100px; object-fit:contain; cursor:grab;
   filter: drop-shadow(0 6px 10px rgba(0,0,0,.18));
 `;
 wrap.appendChild(img);
 
+// Speech bubble with tail (right/left auto)
 const bubble = document.createElement('div');
+bubble.className = 'pet-bubble';
 bubble.style.cssText = `
-  position:absolute; bottom:90px; right:0; max-width:220px;
+  position:absolute; bottom:92px; right:0; max-width:260px;
   background:#fff; color:#2b2723; border:1.5px solid #e1d6cf; border-radius:12px;
-  padding:8px 10px; font:13px/1.3 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  padding:8px 10px; font:13px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
   box-shadow:0 8px 22px rgba(0,0,0,.10), 0 1px 6px rgba(0,0,0,.06);
   display:none;
 `;
 wrap.appendChild(bubble);
 
+// Tail via :after
+const style = document.createElement('style');
+style.textContent = `
+  .pet-bubble { position:absolute; }
+  .pet-bubble.show { display:block; }
+  .pet-bubble.right::after,
+  .pet-bubble.left::after {
+    content:""; position:absolute; width:0; height:0; border:10px solid transparent;
+  }
+  .pet-bubble.right::after {
+    right:-6px; bottom:10px;
+    border-left-color:#fff; filter:drop-shadow(1px 0 0 #e1d6cf);
+  }
+  .pet-bubble.left::after {
+    left:-6px; bottom:10px;
+    border-right-color:#fff; filter:drop-shadow(-1px 0 0 #e1d6cf);
+  }
+`;
+document.documentElement.appendChild(style);
+
 document.documentElement.appendChild(wrap);
 
-// ---------- Helpers ----------
-function setBubble(text) {
-  if (!text) return;
-  bubble.textContent = text;
-  bubble.style.display = 'block';
-  clearTimeout(setBubble._t);
-  setBubble._t = setTimeout(()=> bubble.style.display = 'none', 4200);
-}
-function speakNow(text){
-  setBubble(text);
-  try {
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1; u.pitch = 1;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-  } catch {}
+// ---------- Utils ----------
+function positionBubble() {
+  const r = wrap.getBoundingClientRect();
+  const spaceRight = window.innerWidth - r.right;
+  const spaceLeft  = r.left;
+  const preferRight = spaceRight >= 220 || spaceRight > spaceLeft;
+  bubble.classList.toggle('right', preferRight);
+  bubble.classList.toggle('left', !preferRight);
+  // snap just above mouth area
+  bubble.style.bottom = '92px';
+  bubble.style.right  = preferRight ? '0' : 'auto';
+  bubble.style.left   = preferRight ? 'auto' : '0';
 }
 
-// Load avatar with robust fallback: try page root(./) then extension asset
+function showBubble(text, ms) {
+  if (!text) return;
+  positionBubble();
+  bubble.textContent = text;
+  bubble.classList.add('show');
+  clearTimeout(showBubble._t);
+  const dur = Math.max(2200, Math.min(7000, ms || 3500));
+  showBubble._t = setTimeout(() => bubble.classList.remove('show'), dur);
+}
+
+// Speak helper (visual only, no speech synthesis)
+function speak(text) { showBubble(text); }
+
+// Robust avatar loader: always from the extension package
 function setAvatar(file){
-  if (!file) return;
-  const name = file.trim();
-  img.src = `./${name}`;
-  img.onerror = () => { img.onerror = null; img.src = chrome.runtime.getURL(`assets/${name}`); };
+  const name = (file || 'brown_dog_nobg.png').trim();
+  img.src = chrome.runtime.getURL(`assets/${name}`);
 }
 
 // ---------- Drag to move & save position ----------
@@ -91,7 +119,7 @@ function setAvatar(file){
     chrome.storage.local.set({ [KEYS.POS]: { x: r.left, y: r.top } });
   });
 
-  // Touch support
+  // Touch
   wrap.addEventListener('touchstart', (e)=>{
     const t = e.touches[0]; if (!t) return;
     dragging = true; startX = t.clientX; startY = t.clientY;
@@ -116,10 +144,26 @@ function setAvatar(file){
   });
 })();
 
-// ---------- Initial load ----------
-chrome.storage.local.get([KEYS.AVATAR, KEYS.SPEAK, KEYS.POS], (cfg)=>{
-  setAvatar(cfg[KEYS.AVATAR] || 'brown_dog_nobg.png');
+// ---------- Lines (dialogue list) ----------
+let customLines = [];
+let clickIndex = 0;
 
+// Cycle through lines when you click the pet
+img.addEventListener('click', ()=>{
+  const pool = customLines.length ? customLines : ["You’ve got this."];
+  speak(pool[clickIndex % pool.length]);
+  clickIndex++;
+});
+
+// ---------- Initial load ----------
+chrome.storage.local.get([KEYS.AVATAR, KEYS.LINES, KEYS.SPEAK, KEYS.POS], (cfg)=>{
+  // Avatar
+  setAvatar(cfg[KEYS.AVATAR]);
+
+  // Lines
+  if (Array.isArray(cfg[KEYS.LINES])) customLines = cfg[KEYS.LINES];
+
+  // Position
   const pos = cfg[KEYS.POS];
   if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
     wrap.style.left = pos.x + 'px';
@@ -128,80 +172,44 @@ chrome.storage.local.get([KEYS.AVATAR, KEYS.SPEAK, KEYS.POS], (cfg)=>{
     wrap.style.bottom = 'auto';
   }
 
+  // If the control panel just wrote a speak-now, show it ONCE
   const sp = cfg[KEYS.SPEAK];
-  if (sp && sp.text && Date.now() - (sp.at||0) < 120000) speakNow(sp.text);
+  if (sp && sp.text && Date.now() - (sp.at||0) < 8000) {
+    speak(sp.text);              // show once
+    // Clear it so a late listener doesn't repeat
+    chrome.storage.local.set({ [KEYS.SPEAK]: null });
+  }
 });
 
-// ---------- React to storage updates (avatar changes, speak requests) ----------
+// ---------- Live updates ----------
 chrome.storage.onChanged.addListener((changes, area)=>{
   if (area !== 'local') return;
 
   if (changes[KEYS.AVATAR]) {
     const next = changes[KEYS.AVATAR].newValue;
-    setAvatar(next || 'brown_dog_nobg.png');
+    setAvatar(next);
   }
 
+  if (changes[KEYS.LINES]) {
+    const v = changes[KEYS.LINES].newValue;
+    customLines = Array.isArray(v) ? v : [];
+    clickIndex = 0; // restart the cycle
+  }
+
+  // Speak-now set by the control page (save button) or bg
   if (changes[KEYS.SPEAK]) {
     const v = changes[KEYS.SPEAK].newValue;
-    if (v && v.text) speakNow(v.text);
+    if (v && v.text) {
+      speak(v.text);                   // show once
+      chrome.storage.local.set({ [KEYS.SPEAK]: null }); // prevent repeats
+    }
   }
 });
 
-// ---------- Gentle nudges + live line updates ----------
-let customLines = [];
+// ---------- Gentle nudges from bg.js (random line) ----------
 chrome.runtime.onMessage.addListener((msg)=>{
   if (msg?.type === 'NUDGE') {
-    chrome.storage.local.get([KEYS.LINES], (cfg)=>{
-      const arr = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
-      const text = arr.length ? arr[Math.floor(Math.random()*arr.length)] : "Time for a tiny step?";
-      speakNow(text);
-    });
-  } else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) {
-    customLines = msg.lines;
-  }
-});
-
-// ---------- BRIDGE: accept messages from the Control Panel web page ----------
-window.addEventListener('message', (e) => {
-  const data = e?.data;
-  if (!data || typeof data !== 'object') return;
-
-  // (optional) you could restrict origins here:
-  // if (!/^https:\/\/latuang\.github\.io/.test(e.origin)) return;
-
-  if (data.type === 'PET_ADD_LINES' && Array.isArray(data.lines)) {
-    const cleaned = data.lines.map(s => String(s).trim()).filter(Boolean);
-    chrome.storage.local.get([KEYS.LINES], (cfg) => {
-      const current = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
-      const merged = Array.from(new Set([...current, ...cleaned]));
-      chrome.storage.local.set({ [KEYS.LINES]: merged }, () => {
-        const last = cleaned[cleaned.length - 1] || '';
-        if (last) {
-          chrome.storage.local.set({ [KEYS.SPEAK]: { text: last, at: Date.now() } });
-          speakNow(last); // immediate feedback on the control page
-        }
-        // the bg.js onChanged fan-out will notify other tabs
-        window.postMessage({ type: 'PET_LINES_RESPONSE', ok: true, lines: merged }, '*');
-      });
-    });
-  }
-
-  if (data.type === 'PET_GET_LINES') {
-    chrome.storage.local.get([KEYS.LINES], (cfg) => {
-      const lines = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
-      window.postMessage({ type: 'PET_LINES_RESPONSE', ok: true, lines }, '*');
-    });
-  }
-
-  if (data.type === 'PET_SET_AVATAR' && typeof data.file === 'string') {
-    const file = data.file;
-    setAvatar(file); // instant on this page
-    chrome.storage.local.set({ [KEYS.AVATAR]: file });
-  }
-
-  if (data.type === 'PET_SAY_NOW' && typeof data.text === 'string' && data.text.trim()) {
-    const text = data.text.trim();
-    chrome.storage.local.set({ [KEYS.SPEAK]: { text, at: Date.now() } });
-    speakNow(text);
+    const pool = customLines.length ? customLines : ["Time for a tiny step?"];
+    speak(pool[Math.floor(Math.random()*pool.length)]);
   }
 });
