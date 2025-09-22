@@ -45,6 +45,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
         <div class="row">
           <button id="saveLines" class="btn peach">Save to PET ✨</button>
           <button id="loadLines" class="btn mint">Load from PET 🌿</button>
+          <button id="clearLines" class="btn" style="color:#7a3c34;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#ffccc7,#ffd6d6) border-box;border:1.5px solid transparent">Clear All 🗑️</button>
           <div id="status" class="status"></div>
         </div>
       </div>
@@ -73,8 +74,8 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
         <div class="stats">
           <div class="stat"><b id="today">0m</b><span class="mini">Today</span></div>
           <div class="stat"><b id="week">0m</b><span class="mini">Last 7 days</span></div>
-          <div class="stat"><b id="streak">0</b><span class="mini">Current Streak</span></div>
-          <div class="stat"><b id="longest">0</b><span class="mini">Longest</span></div>
+          <div class="stat"><b id="streak">0 days</b><span class="mini">Current Streak</span></div>
+          <div class="stat"><b id="longest">0 days</b><span class="mini">Longest Streak</span></div>
         </div>
         <div id="chart" class="chart"></div>
       </div>
@@ -105,13 +106,21 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   qs('saveLines').addEventListener('click', () => {
     const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
     lsSet(PET_LINES, lines); // fallback copy for the website
-    window.postMessage({ type: 'PET_ADD_LINES', lines }, '*');                          // send to content.js
-    window.postMessage({ type: 'PET_SAY_NOW', text: lines.at(-1) || 'You’ve got this.' }, '*');
+    window.postMessage({ type: 'PET_ADD_LINES', lines }, '*');
+    window.postMessage({ type: 'PET_SAY_NOW', text: lines.at(-1) || 'You've got this.' }, '*');
     setStatus('Saved. PET will nudge with your lines.');
   });
 
   qs('loadLines').addEventListener('click', () => {
     window.postMessage({ type: 'PET_GET_LINES' }, '*');
+  });
+
+  // Add clear functionality
+  qs('clearLines').addEventListener('click', () => {
+    linesEl.value = '';
+    lsSet(PET_LINES, []);
+    window.postMessage({ type: 'PET_ADD_LINES', lines: [] }, '*');
+    setStatus('Cleared all lines.');
   });
 
   window.addEventListener('message', (e) => {
@@ -144,9 +153,17 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   function finishSession(){
     const seconds = Math.max(1, parseInt(hIn.value||'0',10)*3600 + parseInt(mIn.value||'0',10)*60 + parseInt(sIn.value||'0',10));
     addSession(seconds);
-    const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
-    const text  = (lines.length ? lines[Math.floor(Math.random()*lines.length)] : "Nice focus! Another step done.");
-    window.postMessage({ type: 'PET_SAY_NOW', text }, '*');
+    
+    // Send timer complete notification first
+    window.postMessage({ type: 'PET_TIMER_COMPLETE' }, '*');
+    
+    // Then send a congratulatory message after a short delay
+    setTimeout(() => {
+      const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
+      const text = (lines.length ? lines[Math.floor(Math.random()*lines.length)] : "Nice focus! Another step done.");
+      window.postMessage({ type: 'PET_SAY_NOW', text }, '*');
+    }, 2000);
+    
     setStatus('Nice! Session added.');
     resetTimer();
   }
@@ -203,6 +220,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   qs('savePeriod').addEventListener('click', ()=>{
     const val = Math.max(1, parseInt(periodEl.value||'45',10));
     lsSet(PERIOD_KEY, val);
+    // Send message to content script to forward to background script
     window.postMessage({ type:'PET_RESCHEDULE' }, '*');
     setStatus('Saved. PET will nudge every '+val+' min.');
   });
@@ -215,28 +233,4 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     { file:'orange_hams_nobg.png', label:'Hamster' },
     { file:'orange_cat_nobg.png',  label:'Orange cat' }
   ];
-  const petGrid = qs('pets');
-  function markSelected(tile){ [...petGrid.children].forEach(c=>c.classList.remove('sel')); tile.classList.add('sel'); }
-  function renderPets(saved){
-    petGrid.innerHTML='';
-    PETS.forEach(p=>{
-      const div=document.createElement('div'); div.className='pet-tile';
-      const img=document.createElement('img'); img.alt=p.label;
-      const name=p.file;
-      img.src = `./${name}`; // repo root first
-      img.onerror = () => { img.onerror = null; img.src = `chrome-extension://libkjkfhpilbfmcbknhnhnfejacjkccd/assets/${name}`; };
-      div.appendChild(img);
-      if (p.file===saved) markSelected(div);
-      div.addEventListener('click', ()=>{
-        markSelected(div);
-        lsSet(PET_AVATAR, p.file);
-        window.postMessage({ type:'PET_SET_AVATAR', file:p.file }, '*');
-      });
-      petGrid.appendChild(div);
-    });
-  }
-  renderPets(lsGet(PET_AVATAR, PETS[0].file));
-  linesEl.value = (lsGet(PET_LINES, [])).join('\n');
-</script>
-</body>
-</html>
+  const petGrid =
