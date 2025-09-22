@@ -47,9 +47,7 @@ function setBubble(text) {
   setBubble._t = setTimeout(()=> bubble.style.display = 'none', 4200);
 }
 function speakNow(text){
-  // Visual bubble
   setBubble(text);
-  // Optional voice (best-effort; won't break if disabled)
   try {
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 1; u.pitch = 1;
@@ -62,9 +60,7 @@ function speakNow(text){
 function setAvatar(file){
   if (!file) return;
   const name = file.trim();
-  // First: relative to the current page (works on GitHub Pages)
   img.src = `./${name}`;
-  // Fallback: use the extension packaged asset
   img.onerror = () => { img.onerror = null; img.src = chrome.runtime.getURL(`assets/${name}`); };
 }
 
@@ -122,10 +118,8 @@ function setAvatar(file){
 
 // ---------- Initial load ----------
 chrome.storage.local.get([KEYS.AVATAR, KEYS.SPEAK, KEYS.POS], (cfg)=>{
-  // Avatar
   setAvatar(cfg[KEYS.AVATAR] || 'brown_dog_nobg.png');
 
-  // Position
   const pos = cfg[KEYS.POS];
   if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
     wrap.style.left = pos.x + 'px';
@@ -134,12 +128,11 @@ chrome.storage.local.get([KEYS.AVATAR, KEYS.SPEAK, KEYS.POS], (cfg)=>{
     wrap.style.bottom = 'auto';
   }
 
-  // If page just asked PET to speak recently, show it
   const sp = cfg[KEYS.SPEAK];
   if (sp && sp.text && Date.now() - (sp.at||0) < 120000) speakNow(sp.text);
 });
 
-// ---------- React to storage updates (avatar changes, speak requests) ----------
+// ---------- React to storage updates ----------
 chrome.storage.onChanged.addListener((changes, area)=>{
   if (area !== 'local') return;
 
@@ -147,14 +140,13 @@ chrome.storage.onChanged.addListener((changes, area)=>{
     const next = changes[KEYS.AVATAR].newValue;
     setAvatar(next || 'brown_dog_nobg.png');
   }
-
   if (changes[KEYS.SPEAK]) {
     const v = changes[KEYS.SPEAK].newValue;
     if (v && v.text) speakNow(v.text);
   }
 });
 
-// ---------- Gentle nudges from bg.js (pick a random saved line) ----------
+// ---------- Gentle nudges from bg.js ----------
 chrome.runtime.onMessage.addListener((msg)=>{
   if (msg?.type === 'NUDGE') {
     chrome.storage.local.get([KEYS.LINES], (cfg)=>{
@@ -162,5 +154,22 @@ chrome.runtime.onMessage.addListener((msg)=>{
       const text = arr.length ? arr[Math.floor(Math.random()*arr.length)] : "Time for a tiny step?";
       speakNow(text);
     });
+  }
+});
+
+// ---------- BRIDGE: accept window messages from index.html ----------
+window.addEventListener('message', (ev) => {
+  if (ev.source !== window) return;
+  const m = ev.data;
+  if (!m || typeof m !== 'object') return;
+
+  if (m.type === 'PET_SET_AVATAR' && m.file) {
+    chrome.storage.local.set({ [KEYS.AVATAR]: m.file });
+  } else if (m.type === 'PET_SAVE_LINES' && Array.isArray(m.lines)) {
+    chrome.storage.local.set({ [KEYS.LINES]: m.lines });
+  } else if (m.type === 'PET_SAY_NOW' && m.text) {
+    const payload = { text: m.text, at: Date.now() };
+    chrome.storage.local.set({ [KEYS.SPEAK]: payload });
+    speakNow(m.text); // immediate feedback on this page
   }
 });
