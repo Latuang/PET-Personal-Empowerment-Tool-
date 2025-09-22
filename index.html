@@ -5,7 +5,7 @@
   <title>PET Control Panel</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    /* (your existing CSS unchanged) */
+    /* your existing CSS (same visual as you showed) */
     :root{--bg-a:#fff4ea;--bg-b:#fde9f2;--bg-c:#e9fbf1;--ink:#2b2723;--ink-soft:#7b716a;--line:#d9cdc5;--line-strong:#cdbfb6;--accent:#2f8d7c;--accent-soft:#e8f3f0;--peach:#ffa191;--mint:#6cc7b3;--honey:#ffd674;--radius:14px;--shadow:0 10px 26px rgba(40,26,16,.10),0 2px 10px rgba(40,26,16,.06)}
     html,body{height:100%}body{margin:0;color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(180deg,var(--bg-a),var(--bg-b) 45%,var(--bg-c) 100%);-webkit-font-smoothing:antialiased;overflow-x:hidden}
     .wrap{max-width:1080px;margin:clamp(16px,4vh,28px) auto;padding:14px;background:#fffdfb;border:1.5px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:grid;gap:12px}
@@ -14,7 +14,7 @@
     .btn{appearance:none;border:1.5px solid var(--line-strong);background:linear-gradient(#fff,#faf7f4);padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:700;color:#245e54;box-shadow:0 2px 8px rgba(0,0,0,.06)}.btn:active{transform:translateY(1px)}
     .grid{display:grid;gap:12px;grid-template-columns:1.05fr .95fr;min-height:0}@media (max-width:920px){.grid{grid-template-columns:1fr}}
     .card,.timer,.paw,.pets{background:#fffaf6;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px}.card{display:grid;gap:8px;min-height:0}.card h2,.timer h2,.paw h2,.pets h2{margin:0;font-size:15px;display:flex;align-items:center;gap:6px}
-    .field{border:1.5px solid var(--line-strong);background:#fff;border-radius:12px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(0,0,0,.04)}textarea{width:100%;min-height:138px;max-height:190px;resize:vertical;border:0;outline:0;padding:10px 12px 12px;background:#fff;color:#2b2723;font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .field{border:1.5px solid var(--line-strong);background:#fff;border-radius:12px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(0,0,0,.04)}textarea{width:100%;min-height:138px;max-height:190px;resize:vertical;border:0;outline:0;padding:10px 12px 12px;background:#fff;color:var(--ink);font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.btn.peach{color:#6b2b24;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#ffb6a9,#ffc6c6) border-box;border:1.5px solid transparent}.btn.mint{color:#20584d;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#b8ece2,#c7f2eb) border-box;border:1.5px solid transparent}.status{margin-left:auto;color:#0f7d4c;font-size:12px}
     .timer{display:grid;gap:10px;grid-template-rows:auto auto auto}.lcd{margin:2px auto 4px;border:1.5px solid var(--line-strong);background:linear-gradient(180deg,#fff7c5,#ffe38c);color:#1e1a14;font:800 26px/1 "JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:1.5px;padding:10px 12px 8px;border-radius:10px;min-width:140px;text-align:center;box-shadow:inset 0 1px 0 #fffbe0,inset 0 -2px 0 #e7c86a}
     .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.pill{padding:8px 10px;border-radius:10px;border:1.5px solid var(--line-strong);background:#fff;cursor:pointer;font-weight:700;box-shadow:0 1px 6px rgba(0,0,0,.06)}.pill.start{background:#e7faf4;color:#24695d}.pill.pause{background:#fff0ed;color:#7a3c34}.pill.reset{background:#fff8df;color:#6d5a23}
@@ -88,7 +88,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   </div>
 
 <script>
-  // ---------- helpers ----------
+  // ---------- minimal “bridge” the content script listens for ----------
   const SESSIONS_KEY = 'petSessions';
   const PET_AVATAR   = 'petAvatar';
   const PERIOD_KEY   = 'periodMinutes';
@@ -98,28 +98,24 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   const statusEl = qs('status');
   const linesEl  = qs('lines');
 
-  function setStatus(msg, ok=true) {
-    statusEl.textContent = msg || '';
-    statusEl.style.color = ok ? '#0f7d4c' : '#b22626';
-    if (msg) setTimeout(()=> setStatus(''), 2500);
-  }
-  function lsGet(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
-  function lsSet(key, val)      { localStorage.setItem(key, JSON.stringify(val)); }
+  const setStatus = (msg, ok=true)=>{ statusEl.textContent = msg||''; statusEl.style.color = ok ? '#0f7d4c' : '#b22626'; if (msg) setTimeout(()=> setStatus(''), 2200); };
+  const lsGet = (k,f)=>{ try{return JSON.parse(localStorage.getItem(k)) ?? f;}catch{return f;} };
+  const lsSet = (k,v)=> localStorage.setItem(k, JSON.stringify(v));
 
-  // ---------- Pep Lines (bridge) ----------
-  qs('saveLines').addEventListener('click', () => {
+  // ----- Pep lines -----
+  qs('saveLines').addEventListener('click', ()=>{
     const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
-    lsSet(PET_LINES, lines);                               // local mirror (website)
-    window.postMessage({ type: 'PET_ADD_LINES', lines }, '*');
-    if (lines.length) window.postMessage({ type: 'PET_SAY_NOW', text: lines.at(-1) }, '*'); // say once
+    lsSet(PET_LINES, lines); // local copy
+    window.postMessage({ type:'PET_ADD_LINES', lines }, '*');
+    if (lines.length) window.postMessage({ type:'PET_SAY_NOW', text: lines[lines.length-1] }, '*');
     setStatus('Saved. PET will nudge with your lines.');
   });
 
-  qs('loadLines').addEventListener('click', () => {
-    window.postMessage({ type: 'PET_GET_LINES' }, '*');
+  qs('loadLines').addEventListener('click', ()=>{
+    window.postMessage({ type:'PET_GET_LINES' }, '*');
   });
 
-  window.addEventListener('message', (e) => {
+  window.addEventListener('message', (e)=>{
     const d = e.data;
     if (d?.type === 'PET_LINES_RESPONSE' && Array.isArray(d.lines)) {
       linesEl.value = d.lines.join('\n');
@@ -127,10 +123,10 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     }
   });
 
-  // ---------- timer (unchanged) ----------
+  // ----- Timer (unchanged from your working version) -----
   let countdown = null, remaining = 1500;
   const lcd = qs('lcd'), hIn = qs('h'), mIn = qs('m'), sIn = qs('s');
-  function fmt(sec){ const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
+  const fmt = (sec)=>{ const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); };
   function syncInputsToRemaining(){ const h=Math.floor(remaining/3600), m=Math.floor((remaining%3600)/60), s=remaining%60; hIn.value=h; mIn.value=m; sIn.value=s; lcd.textContent=fmt(remaining); }
   function recalcFromInputs(){ const h=Math.max(0,parseInt(hIn.value||'0',10)), m=Math.max(0,parseInt(mIn.value||'0',10)), s=Math.max(0,parseInt(sIn.value||'0',10)); remaining=h*3600+m*60+s; lcd.textContent=fmt(remaining); }
   [hIn,mIn,sIn].forEach(el=> el.addEventListener('change', recalcFromInputs));
@@ -146,26 +142,26 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   qs('m25').addEventListener('click',()=> setQuick(25));
   syncInputsToRemaining();
 
+  function startOfDay(ts){ const d=new Date(ts); d.setHours(0,0,0,0); return d.getTime(); }
+  function addSession(seconds, atMs=Date.now()){
+    const local = lsGet(SESSIONS_KEY, []);
+    local.push({ ts: Math.floor(atMs/1000), seconds: Math.max(1, Math.floor(seconds)) });
+    lsSet(SESSIONS_KEY, local.slice(-2000));
+    window.postMessage({ type:'PET_ADD_SESSION', seconds: Math.max(1, Math.floor(seconds)) }, '*');
+    updateStatsFromStores();
+  }
   function finishSession(){
     const seconds = Math.max(1, parseInt(hIn.value||'0',10)*3600 + parseInt(mIn.value||'0',10)*60 + parseInt(sIn.value||'0',10));
     addSession(seconds);
     const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
     const text  = (lines.length ? lines[Math.floor(Math.random()*lines.length)] : "Nice focus! Another step done.");
-    window.postMessage({ type: 'PET_SAY_NOW', text }, '*');
+    window.postMessage({ type:'PET_SAY_NOW', text }, '*');
     setStatus('Nice! Session added.');
     resetTimer();
   }
 
-  // ---------- progress pawprint (7 days) ----------
-  function startOfDay(ts){ const d=new Date(ts); d.setHours(0,0,0,0); return d.getTime(); }
+  // ----- Stats (7 days) — same as your recent build -----
   function dayKey(ts){ return new Date(startOfDay(ts)).toISOString().slice(0,10); }
-  function addSession(seconds, atMs=Date.now()){
-    const local = lsGet(SESSIONS_KEY, []);
-    local.push({ ts: Math.floor(atMs/1000), seconds: Math.max(1, Math.floor(seconds)) });
-    lsSet(SESSIONS_KEY, local.slice(-2000));
-    window.postMessage({ type:'PET_ADD_SESSION', seconds: Math.max(1, Math.floor(seconds)) }, '*'); // mirror to extension
-    updateStatsFromStores();
-  }
   function computeStats(sessions){
     const now = Date.now(), todayStart = startOfDay(now);
     let today = 0, week = 0;
@@ -186,10 +182,6 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     while ((perDay.get(dayKey(cursor))||0) > 0) { streak++; cursor -= 86400000; longest = Math.max(longest, streak); }
     return { today:Math.round(today/60), week:Math.round(week/60), streak, longest, bars: days };
   }
-  function updateStatsFromStores(){
-    const local = lsGet(SESSIONS_KEY, []);
-    renderStats(computeStats(local));
-  }
   function renderStats(st){
     qs('today').textContent   = (st.today||0) + 'm';
     qs('week').textContent    = (st.week||0) + 'm';
@@ -204,12 +196,11 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
       bar.appendChild(span); bar.appendChild(lbl); chart.appendChild(bar);
     }
   }
+  function updateStatsFromStores(){ renderStats(computeStats(lsGet('petSessions', []))); }
   updateStatsFromStores();
 
-  // ---------- period (nudge frequency) ----------
-  const periodEl = qs('period');
-  function loadPeriod(){ periodEl.value = lsGet(PERIOD_KEY, 45); }
-  loadPeriod();
+  // ----- Period (nudge frequency) -----
+  const periodEl = qs('period'); periodEl.value = lsGet(PERIOD_KEY, 45);
   qs('savePeriod').addEventListener('click', ()=>{
     const val = Math.max(1, parseInt(periodEl.value||'45',10));
     lsSet(PERIOD_KEY, val);
@@ -217,7 +208,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     setStatus('Saved. PET will nudge every '+val+' min.');
   });
 
-  // ---------- pet chooser (your existing logic preserved) ----------
+  // ----- Avatar picker (KEEPING your working behavior) -----
   const PETS = [
     { file:'brown_dog_nobg.png',   label:'Brown pup' },
     { file:'pet.png',              label:'Sausage dog' },
@@ -233,25 +224,20 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
       const div=document.createElement('div'); div.className='pet-tile';
       const img=document.createElement('img'); img.alt=p.label;
       const name=p.file;
-      img.src = `./${name}`;  // repo root
-      img.onerror = () => {   // fallback to extension asset
-        img.onerror = null;
-        img.src = `chrome-extension://libkjkfhpilbfmcbknhnhnfejacjkccd/assets/${name}`;
-      };
+      img.src = `./${name}`; // page asset first…
+      img.onerror = () => { img.onerror = null; img.src = `chrome-extension://libkjkfhpilbfmcbknhnhnfejacjkccd/assets/${name}`; };
       div.appendChild(img);
       if (p.file===saved) markSelected(div);
       div.addEventListener('click', ()=>{
         markSelected(div);
-        lsSet(PET_AVATAR, p.file);                    // website mirror
-        window.postMessage({ type:'PET_SET_AVATAR', file:p.file }, '*'); // persist in extension
+        lsSet(PET_AVATAR, p.file);                            // local copy
+        window.postMessage({ type:'PET_SET_AVATAR', file:p.file }, '*');  // tell extension
       });
       petGrid.appendChild(div);
     });
   }
-
-  // initial lines + avatar
-  linesEl.value = (lsGet(PET_LINES, [])).join('\n');
   renderPets(lsGet(PET_AVATAR, PETS[0].file));
+  linesEl.value = (lsGet(PET_LINES, [])).join('\n');
 </script>
 </body>
 </html>
