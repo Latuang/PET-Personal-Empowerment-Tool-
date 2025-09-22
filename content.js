@@ -56,7 +56,7 @@ function speakNow(text){
   } catch {}
 }
 
-// Load avatar with robust fallback: try page repo root(./) then extension asset
+// Load avatar with robust fallback: try page root(./) then extension asset
 function setAvatar(file){
   if (!file) return;
   const name = file.trim();
@@ -132,7 +132,7 @@ chrome.storage.local.get([KEYS.AVATAR, KEYS.SPEAK, KEYS.POS], (cfg)=>{
   if (sp && sp.text && Date.now() - (sp.at||0) < 120000) speakNow(sp.text);
 });
 
-// ---------- React to storage updates ----------
+// ---------- React to storage updates (avatar changes, speak requests) ----------
 chrome.storage.onChanged.addListener((changes, area)=>{
   if (area !== 'local') return;
 
@@ -140,13 +140,15 @@ chrome.storage.onChanged.addListener((changes, area)=>{
     const next = changes[KEYS.AVATAR].newValue;
     setAvatar(next || 'brown_dog_nobg.png');
   }
+
   if (changes[KEYS.SPEAK]) {
     const v = changes[KEYS.SPEAK].newValue;
     if (v && v.text) speakNow(v.text);
   }
 });
 
-// ---------- Gentle nudges from bg.js ----------
+// ---------- Gentle nudges + live line updates ----------
+let customLines = [];
 chrome.runtime.onMessage.addListener((msg)=>{
   if (msg?.type === 'NUDGE') {
     chrome.storage.local.get([KEYS.LINES], (cfg)=>{
@@ -154,22 +156,52 @@ chrome.runtime.onMessage.addListener((msg)=>{
       const text = arr.length ? arr[Math.floor(Math.random()*arr.length)] : "Time for a tiny step?";
       speakNow(text);
     });
+  } else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) {
+    customLines = msg.lines;
   }
 });
 
-// ---------- BRIDGE: accept window messages from index.html ----------
-window.addEventListener('message', (ev) => {
-  if (ev.source !== window) return;
-  const m = ev.data;
-  if (!m || typeof m !== 'object') return;
+// ---------- BRIDGE: accept messages from the Control Panel web page ----------
+window.addEventListener('message', (e) => {
+  const data = e?.data;
+  if (!data || typeof data !== 'object') return;
 
-  if (m.type === 'PET_SET_AVATAR' && m.file) {
-    chrome.storage.local.set({ [KEYS.AVATAR]: m.file });
-  } else if (m.type === 'PET_SAVE_LINES' && Array.isArray(m.lines)) {
-    chrome.storage.local.set({ [KEYS.LINES]: m.lines });
-  } else if (m.type === 'PET_SAY_NOW' && m.text) {
-    const payload = { text: m.text, at: Date.now() };
-    chrome.storage.local.set({ [KEYS.SPEAK]: payload });
-    speakNow(m.text); // immediate feedback on this page
+  // (optional) you could restrict origins here:
+  // if (!/^https:\/\/latuang\.github\.io/.test(e.origin)) return;
+
+  if (data.type === 'PET_ADD_LINES' && Array.isArray(data.lines)) {
+    const cleaned = data.lines.map(s => String(s).trim()).filter(Boolean);
+    chrome.storage.local.get([KEYS.LINES], (cfg) => {
+      const current = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
+      const merged = Array.from(new Set([...current, ...cleaned]));
+      chrome.storage.local.set({ [KEYS.LINES]: merged }, () => {
+        const last = cleaned[cleaned.length - 1] || '';
+        if (last) {
+          chrome.storage.local.set({ [KEYS.SPEAK]: { text: last, at: Date.now() } });
+          speakNow(last); // immediate feedback on the control page
+        }
+        // the bg.js onChanged fan-out will notify other tabs
+        window.postMessage({ type: 'PET_LINES_RESPONSE', ok: true, lines: merged }, '*');
+      });
+    });
+  }
+
+  if (data.type === 'PET_GET_LINES') {
+    chrome.storage.local.get([KEYS.LINES], (cfg) => {
+      const lines = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
+      window.postMessage({ type: 'PET_LINES_RESPONSE', ok: true, lines }, '*');
+    });
+  }
+
+  if (data.type === 'PET_SET_AVATAR' && typeof data.file === 'string') {
+    const file = data.file;
+    setAvatar(file); // instant on this page
+    chrome.storage.local.set({ [KEYS.AVATAR]: file });
+  }
+
+  if (data.type === 'PET_SAY_NOW' && typeof data.text === 'string' && data.text.trim()) {
+    const text = data.text.trim();
+    chrome.storage.local.set({ [KEYS.SPEAK]: { text, at: Date.now() } });
+    speakNow(text);
   }
 });
