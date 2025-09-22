@@ -25,7 +25,7 @@ img.style.cssText = `
 `;
 wrap.appendChild(img);
 
-// Speech bubble with tail (auto flips left/right)
+// Speech bubble with tail (right/left auto)
 const bubble = document.createElement('div');
 bubble.className = 'pet-bubble';
 bubble.style.cssText = `
@@ -37,7 +37,7 @@ bubble.style.cssText = `
 `;
 wrap.appendChild(bubble);
 
-// Tail via CSS
+// Tail via :after
 const style = document.createElement('style');
 style.textContent = `
   .pet-bubble { position:absolute; }
@@ -59,7 +59,7 @@ document.documentElement.appendChild(style);
 
 document.documentElement.appendChild(wrap);
 
-// ---------- Helpers ----------
+// ---------- Utils ----------
 function positionBubble() {
   const r = wrap.getBoundingClientRect();
   const spaceRight = window.innerWidth - r.right;
@@ -71,7 +71,6 @@ function positionBubble() {
   bubble.style.right  = preferRight ? '0' : 'auto';
   bubble.style.left   = preferRight ? 'auto' : '0';
 }
-
 function showBubble(text, ms) {
   if (!text) return;
   positionBubble();
@@ -81,11 +80,9 @@ function showBubble(text, ms) {
   const dur = Math.max(2200, Math.min(7000, ms || 3500));
   showBubble._t = setTimeout(() => bubble.classList.remove('show'), dur);
 }
+function speak(text) { showBubble(text); } // visual only
 
-// Visual-only “speak”
-function speak(text) { showBubble(text); }
-
-// Always load avatar from the extension package
+// Always load avatar from the packaged assets
 function setAvatar(file){
   const name = (file || 'brown_dog_nobg.png').trim();
   img.src = chrome.runtime.getURL(`assets/${name}`);
@@ -118,7 +115,7 @@ function setAvatar(file){
     chrome.storage.local.set({ [KEYS.POS]: { x: r.left, y: r.top } });
   });
 
-  // Touch support
+  // Touch
   wrap.addEventListener('touchstart', (e)=>{
     const t = e.touches[0]; if (!t) return;
     dragging = true; startX = t.clientX; startY = t.clientY;
@@ -143,18 +140,26 @@ function setAvatar(file){
   });
 })();
 
-// ---------- Lines (dialogue list) ----------
+// ---------- Lines (defaults + saved) ----------
+const DEFAULTS = [
+  "Small steps still move you forward.",
+  "Momentum beats motivation—start tiny.",
+  "25-minute focus, then breathe. You’ve got this.",
+  "Done > perfect. One micro-step now.",
+  "Future you will thank you for this."
+];
+
 let customLines = [];
 let clickIndex = 0;
 
-// Cycle through lines on click
+// Clicking the pet cycles through your saved lines (or defaults if none)
 img.addEventListener('click', ()=>{
-  const pool = customLines.length ? customLines : ["You’ve got this."];
+  const pool = (customLines && customLines.length) ? customLines : DEFAULTS;
   speak(pool[clickIndex % pool.length]);
   clickIndex++;
 });
 
-// ---------- Initial load from storage ----------
+// ---------- Initial load ----------
 chrome.storage.local.get([KEYS.AVATAR, KEYS.LINES, KEYS.SPEAK, KEYS.POS], (cfg)=>{
   // Avatar
   setAvatar(cfg[KEYS.AVATAR]);
@@ -171,11 +176,11 @@ chrome.storage.local.get([KEYS.AVATAR, KEYS.LINES, KEYS.SPEAK, KEYS.POS], (cfg)=
     wrap.style.bottom = 'auto';
   }
 
-  // “Speak now” sent recently by control page
+  // If the control panel just wrote a speak-now, show it ONCE
   const sp = cfg[KEYS.SPEAK];
   if (sp && sp.text && Date.now() - (sp.at||0) < 8000) {
     speak(sp.text);
-    chrome.storage.local.set({ [KEYS.SPEAK]: null }); // avoid repeats
+    chrome.storage.local.set({ [KEYS.SPEAK]: null });
   }
 });
 
@@ -183,82 +188,77 @@ chrome.storage.local.get([KEYS.AVATAR, KEYS.LINES, KEYS.SPEAK, KEYS.POS], (cfg)=
 chrome.storage.onChanged.addListener((changes, area)=>{
   if (area !== 'local') return;
 
-  if (changes[KEYS.AVATAR]) {
-    setAvatar(changes[KEYS.AVATAR].newValue);
-  }
+  if (changes[KEYS.AVATAR]) setAvatar(changes[KEYS.AVATAR].newValue || 'brown_dog_nobg.png');
 
   if (changes[KEYS.LINES]) {
     const v = changes[KEYS.LINES].newValue;
     customLines = Array.isArray(v) ? v : [];
-    clickIndex = 0;
+    clickIndex = 0; // restart the cycle
   }
 
   if (changes[KEYS.SPEAK]) {
     const v = changes[KEYS.SPEAK].newValue;
     if (v && v.text) {
       speak(v.text);
-      chrome.storage.local.set({ [KEYS.SPEAK]: null }); // once
+      chrome.storage.local.set({ [KEYS.SPEAK]: null }); // prevent repeats
     }
   }
 });
 
-// ---------- Bridge: messages from the control page (index.html) ----------
-window.addEventListener('message', (e)=>{
-  const msg = e.data;
-  if (!msg || typeof msg !== 'object') return;
+// ---------- Gentle nudges from bg.js ----------
+chrome.runtime.onMessage.addListener((msg)=>{
+  if (msg?.type === 'NUDGE') {
+    const pool = (customLines && customLines.length) ? customLines : DEFAULTS;
+    speak(pool[Math.floor(Math.random()*pool.length)]);
+  }
+});
 
-  // Save + merge pep lines, then speak the last line once
-  if (msg.type === 'PET_ADD_LINES' && Array.isArray(msg.lines)) {
-    const cleaned = msg.lines.map(s=>String(s).trim()).filter(Boolean);
-    chrome.storage.local.get([KEYS.LINES], (cfg)=>{
+// ---------- Page ↔ content-script bridge ----------
+// Lets your index.html post messages instead of using chrome.* directly.
+window.addEventListener('message', (e) => {
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+
+  // Save lines (merge + de-dupe). Also set a one-time "speak now".
+  if (d.type === 'PET_ADD_LINES' && Array.isArray(d.lines)) {
+    chrome.storage.local.get([KEYS.LINES], (cfg) => {
       const current = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
+      const cleaned = d.lines.map(s => String(s).trim()).filter(Boolean);
       const merged  = Array.from(new Set([...current, ...cleaned]));
-      chrome.storage.local.set({ [KEYS.LINES]: merged }, ()=>{
+      chrome.storage.local.set({ [KEYS.LINES]: merged }, () => {
         customLines = merged;
         clickIndex = 0;
+        const last = cleaned[cleaned.length - 1];
+        if (last) chrome.storage.local.set({ [KEYS.SPEAK]: { text:last, at: Date.now() } });
       });
     });
   }
 
-  // Ask PET to say a line silently now (no TTS)
-  if (msg.type === 'PET_SAY_NOW' && typeof msg.text === 'string' && msg.text.trim()) {
-    const t = msg.text.trim();
-    speak(t);
-    chrome.storage.local.set({ [KEYS.SPEAK]: null }); // ensure no repeats elsewhere
-  }
-
-  // Control page wants the current lines
-  if (msg.type === 'PET_GET_LINES') {
-    chrome.storage.local.get([KEYS.LINES], (cfg)=>{
-      const arr = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
-      window.postMessage({ type:'PET_LINES_RESPONSE', lines: arr }, '*');
+  // Ask for current lines
+  if (d.type === 'PET_GET_LINES') {
+    chrome.storage.local.get([KEYS.LINES], (cfg) => {
+      const lines = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
+      window.postMessage({ type:'PET_LINES_RESPONSE', lines }, '*');
     });
   }
 
-  // Set avatar from control page
-  if (msg.type === 'PET_SET_AVATAR' && typeof msg.file === 'string') {
-    chrome.storage.local.set({ [KEYS.AVATAR]: msg.file });
+  // Immediate speak
+  if (d.type === 'PET_SAY_NOW' && typeof d.text === 'string' && d.text.trim()) {
+    chrome.storage.local.set({ [KEYS.SPEAK]: { text: d.text.trim(), at: Date.now() } });
   }
 
-  // Timer finished: record a session (optional)
-  if (msg.type === 'PET_ADD_SESSION' && Number.isFinite(msg.seconds) && msg.seconds > 0) {
+  // Avatar set from control page (your avatar picker already works)
+  if (d.type === 'PET_SET_AVATAR' && typeof d.file === 'string') {
+    chrome.storage.local.set({ [KEYS.AVATAR]: d.file });
+  }
+
+  // Optional: reschedule alarms, add a session (both no-ops if bg not listening)
+  if (d.type === 'PET_RESCHEDULE') chrome.runtime?.sendMessage?.({ type:'RESCHEDULE' });
+  if (d.type === 'PET_ADD_SESSION' && Number.isFinite(d.seconds)) {
     chrome.storage.local.get([KEYS.SESS], (cfg)=>{
-      const list = Array.isArray(cfg[KEYS.SESS]) ? cfg[KEYS.SESS] : [];
-      list.push({ ts: Math.floor(Date.now()/1000), seconds: Math.floor(msg.seconds) });
-      chrome.storage.local.set({ [KEYS.SESS]: list.slice(-2000) });
+      const sessions = Array.isArray(cfg[KEYS.SESS]) ? cfg[KEYS.SESS] : [];
+      sessions.push({ ts: Math.floor(Date.now()/1000), seconds: Math.max(1, Math.floor(d.seconds)) });
+      chrome.storage.local.set({ [KEYS.SESS]: sessions.slice(-2000) });
     });
-  }
-
-  // Nudge scheduling (background will listen if installed)
-  if (msg.type === 'PET_RESCHEDULE') {
-    try { chrome.runtime.sendMessage({ type:'RESCHEDULE' }); } catch {}
-  }
-});
-
-// ---------- Gentle nudges from bg.js (random saved line) ----------
-chrome.runtime.onMessage.addListener((msg)=>{
-  if (msg?.type === 'NUDGE') {
-    const pool = customLines.length ? customLines : ["Time for a tiny step?"];
-    speak(pool[Math.floor(Math.random()*pool.length)]);
   }
 });
