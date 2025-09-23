@@ -73,8 +73,8 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
         <div class="stats">
           <div class="stat"><b id="today">0m</b><span class="mini">Today</span></div>
           <div class="stat"><b id="week">0m</b><span class="mini">Last 7 days</span></div>
-          <div class="stat"><b id="streak">0</b><span class="mini">Current Streak</span></div>
-          <div class="stat"><b id="longest">0</b><span class="mini">Longest</span></div>
+          <div class="stat"><b id="streak">0 days</b><span class="mini">Current Streak</span></div>
+          <div class="stat"><b id="longest">0 days</b><span class="mini">Longest Streak</span></div>
         </div>
         <div id="chart" class="chart"></div>
       </div>
@@ -105,8 +105,8 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   qs('saveLines').addEventListener('click', () => {
     const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
     lsSet(PET_LINES, lines); // fallback copy for the website
-    window.postMessage({ type: 'PET_ADD_LINES', lines }, '*');                          // send to content.js
-    window.postMessage({ type: 'PET_SAY_NOW', text: lines.at(-1) || 'You’ve got this.' }, '*');
+    window.postMessage({ type: 'PET_ADD_LINES', lines }, '*');
+    window.postMessage({ type: 'PET_SAY_NOW', text: lines.at(-1) || 'You\'ve got this.' }, '*');
     setStatus('Saved. PET will nudge with your lines.');
   });
 
@@ -122,7 +122,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     }
   });
 
-  // ---------- timer (unchanged) ----------
+  // ---------- timer ----------
   let countdown = null, remaining = 1500;
   const lcd = qs('lcd'), hIn = qs('h'), mIn = qs('m'), sIn = qs('s');
   function fmt(sec){ const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
@@ -144,9 +144,10 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   function finishSession(){
     const seconds = Math.max(1, parseInt(hIn.value||'0',10)*3600 + parseInt(mIn.value||'0',10)*60 + parseInt(sIn.value||'0',10));
     addSession(seconds);
-    const lines = linesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
-    const text  = (lines.length ? lines[Math.floor(Math.random()*lines.length)] : "Nice focus! Another step done.");
-    window.postMessage({ type: 'PET_SAY_NOW', text }, '*');
+    
+    // ONLY send timer complete - no random lines
+    window.postMessage({ type: 'PET_TIMER_COMPLETE' }, '*');
+    
     setStatus('Nice! Session added.');
     resetTimer();
   }
@@ -184,8 +185,8 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   function renderStats(st){
     qs('today').textContent   = (st.today||0) + 'm';
     qs('week').textContent    = (st.week||0) + 'm';
-    qs('streak').textContent  = st.streak||0;
-    qs('longest').textContent = st.longest||0;
+    qs('streak').textContent  = (st.streak||0) + ' days';
+    qs('longest').textContent = (st.longest||0) + ' days';
     const chart = qs('chart'); chart.innerHTML='';
     for (const d of st.bars){
       const bar = document.createElement('div'); bar.className='bar';
@@ -207,7 +208,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     setStatus('Saved. PET will nudge every '+val+' min.');
   });
 
-  // ---------- avatar chooser (unchanged; posts to bridge) ----------
+  // ---------- avatar chooser ----------
   const PETS = [
     { file:'brown_dog_nobg.png',   label:'Brown pup' },
     { file:'pet.png',              label:'Sausage dog' },
@@ -236,7 +237,8 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     });
   }
   renderPets(lsGet(PET_AVATAR, PETS[0].file));
-  linesEl.value = (lsGet(PET_LINES, [])).join('\n');
+  // Removed: linesEl.value = (lsGet(PET_LINES, [])).join('\n'); 
+  // This was loading old pep lines on page refresh
 </script>
 </body>
 </html>
