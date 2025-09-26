@@ -109,20 +109,128 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     setStatus('Saved. PET will nudge with your lines.');
   });
 
-  // Removed loadLines functionality completely
+  // ---------- Audio: calm, longer chime (~7–8s) ----------
+  let audioCtx, alarmLimiter;
+  function initAudio(){
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function playChime(){
+    try {
+      initAudio();
+      const now = audioCtx.currentTime;
+
+      // Master bus with soft limiter (prevents harshness across devices)
+      const master = audioCtx.createGain();
+      master.gain.setValueAtTime(0.12, now); // overall loudness
+      const comp = audioCtx.createDynamicsCompressor();
+      comp.threshold.setValueAtTime(-24, now);
+      comp.knee.setValueAtTime(20, now);
+      comp.ratio.setValueAtTime(6, now);
+      comp.attack.setValueAtTime(0.003, now);
+      comp.release.setValueAtTime(0.25, now);
+      master.connect(comp); comp.connect(audioCtx.destination);
+
+      // Gentle swell then fade
+      master.gain.linearRampToValueAtTime(0.16, now + 1.2);
+      master.gain.linearRampToValueAtTime(0.14, now + 4.5);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 7.6);
+
+      // Arpeggio pattern C–E–G (two octaves, soft repeats)
+      const arpNotes = [
+        261.63, 329.63, 392.00, // C4 E4 G4
+        523.25, 659.25, 783.99  // C5 E5 G5
+      ];
+      let t = now;
+
+      // 4 lightweight passes of the arpeggio; each note rings ~0.9s
+      for (let pass = 0; pass < 4; pass++) {
+        for (let i = 0; i < arpNotes.length; i++) {
+          const f = arpNotes[i];
+          const o = audioCtx.createOscillator();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(f, t);
+
+          const g = audioCtx.createGain();
+          // soft attack, then slow decay for calm vibe
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.linearRampToValueAtTime(0.2, t + 0.08);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.95);
+
+          o.connect(g); g.connect(master);
+          o.start(t);
+          o.stop(t + 1.1);
+
+          t += 0.36; // pace the melody
+        }
+      }
+
+      // Underlay pad (triangle) for warmth (C major)
+      const pad = audioCtx.createOscillator();
+      pad.type = 'triangle';
+      pad.frequency.setValueAtTime(196.00, now); // G3 base
+      const padGain = audioCtx.createGain();
+      padGain.gain.setValueAtTime(0.0001, now);
+      padGain.linearRampToValueAtTime(0.06, now + 0.8);
+      padGain.linearRampToValueAtTime(0.05, now + 5.5);
+      padGain.exponentialRampToValueAtTime(0.0001, now + 7.5);
+      pad.connect(padGain); padGain.connect(master);
+      pad.start(now);
+      pad.stop(now + 7.6);
+
+      // Gentle falling bell accent every ~2s
+      for (let k = 0; k < 3; k++) {
+        const bellStart = now + 0.6 + k * 2.0;
+        const b = audioCtx.createOscillator();
+        const bg = audioCtx.createGain();
+        b.type = 'triangle';
+        b.frequency.setValueAtTime(1600, bellStart);
+        b.frequency.exponentialRampToValueAtTime(700, bellStart + 0.6);
+        bg.gain.setValueAtTime(0.0001, bellStart);
+        bg.gain.linearRampToValueAtTime(0.12, bellStart + 0.06);
+        bg.gain.exponentialRampToValueAtTime(0.0001, bellStart + 0.9);
+        b.connect(bg); bg.connect(master);
+        b.start(bellStart);
+        b.stop(bellStart + 1.0);
+      }
+
+      // Tiny haptic pattern if available
+      if (navigator.vibrate) navigator.vibrate([60, 100, 60]);
+    } catch {}
+  }
 
   // ---------- timer ----------
   let countdown = null, remaining = 1500;
   const lcd = qs('lcd'), hIn = qs('h'), mIn = qs('m'), sIn = qs('s');
+
   function fmt(sec){ const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
   function syncInputsToRemaining(){ const h=Math.floor(remaining/3600), m=Math.floor((remaining%3600)/60), s=remaining%60; hIn.value=h; mIn.value=m; sIn.value=s; lcd.textContent=fmt(remaining); }
   function recalcFromInputs(){ const h=Math.max(0,parseInt(hIn.value||'0',10)), m=Math.max(0,parseInt(mIn.value||'0',10)), s=Math.max(0,parseInt(sIn.value||'0',10)); remaining=h*3600+m*60+s; lcd.textContent=fmt(remaining); }
+
   [hIn,mIn,sIn].forEach(el=> el.addEventListener('change', recalcFromInputs));
-  function tick(){ if(remaining>0){ remaining--; lcd.textContent=fmt(remaining);} else { stopTimer(); finishSession(); } }
-  function startTimer(){ stopTimer(); recalcFromInputs(); if (remaining<=0) remaining = 1500; countdown=setInterval(tick,1000); }
+
+  function tick(){ 
+    if(remaining>0){ 
+      remaining--; 
+      lcd.textContent=fmt(remaining);
+    } else { 
+      stopTimer(); 
+      finishSession(); 
+    } 
+  }
+
+  function startTimer(){ 
+    stopTimer(); 
+    recalcFromInputs(); 
+    if (remaining<=0) remaining = 1500; 
+    initAudio(); // ensure audio is ready after a user gesture
+    countdown=setInterval(tick,1000); 
+  }
+
   function stopTimer(){ if(countdown){ clearInterval(countdown); countdown=null; } }
   function resetTimer(){ stopTimer(); remaining=1500; syncInputsToRemaining(); }
   function setQuick(min){ hIn.value=0; mIn.value=min; sIn.value=0; recalcFromInputs(); }
+
   qs('start').addEventListener('click', startTimer);
   qs('pause').addEventListener('click', stopTimer);
   qs('reset').addEventListener('click', resetTimer);
@@ -133,10 +241,13 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
   function finishSession(){
     const seconds = Math.max(1, parseInt(hIn.value||'0',10)*3600 + parseInt(mIn.value||'0',10)*60 + parseInt(sIn.value||'0',10));
     addSession(seconds);
-    
-    // ONLY send timer complete - no random lines
+
+    // Play calm, longer alarm
+    playChime();
+
+    // Inform content scripts (speech bubble etc.)
     window.postMessage({ type: 'PET_TIMER_COMPLETE' }, '*');
-    
+
     setStatus('Nice! Session added.');
     resetTimer();
   }
