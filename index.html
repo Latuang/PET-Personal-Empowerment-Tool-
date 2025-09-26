@@ -44,7 +44,6 @@
 e.g. Tiny step now—future you says thanks."></textarea></div>
         <div class="row">
           <button id="saveLines" class="btn peach">Save to PET ✨</button>
-          <button id="loadLines" class="btn mint">Load from PET 🌿</button>
           <div id="status" class="status"></div>
         </div>
       </div>
@@ -110,17 +109,7 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     setStatus('Saved. PET will nudge with your lines.');
   });
 
-  qs('loadLines').addEventListener('click', () => {
-    window.postMessage({ type: 'PET_GET_LINES' }, '*');
-  });
-
-  window.addEventListener('message', (e) => {
-    const d = e.data;
-    if (d?.type === 'PET_LINES_RESPONSE' && Array.isArray(d.lines)) {
-      linesEl.value = d.lines.join('\n');
-      setStatus('Loaded from PET.');
-    }
-  });
+  // Removed loadLines functionality completely
 
   // ---------- timer ----------
   let countdown = null, remaining = 1500;
@@ -237,8 +226,6 @@ e.g. Tiny step now—future you says thanks."></textarea></div>
     });
   }
   renderPets(lsGet(PET_AVATAR, PETS[0].file));
-  // Removed: linesEl.value = (lsGet(PET_LINES, [])).join('\n'); 
-  // This was loading old pep lines on page refresh
 </script>
 </body>
 </html>
