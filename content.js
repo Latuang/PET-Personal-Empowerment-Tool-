@@ -1,5 +1,6 @@
 // ===== Floating PET on web pages (content script) =====
 
+// Keys shared with index.html / bg.js
 const KEYS = {
   AVATAR: 'petAvatar',          // e.g. "brown_dog_nobg.png"
   LINES:  'petCustomLines',     // string[]
@@ -8,11 +9,20 @@ const KEYS = {
   POS:    'petPos'              // { x, y }
 };
 
-// ---------- DOM ----------
+// Default pep lines
+const DEFAULTS = [
+  "Small steps still move you forward.",
+  "Momentum beats motivation—start tiny.",
+  "25-minute focus, then breathe. You've got this.",
+  "Done > perfect. One micro-step now.",
+  "Future you will thank you for this."
+];
+
+// ---------- DOM: pet container, avatar image, speech bubble ----------
 const wrap = document.createElement('div');
 wrap.style.cssText = `
   position:fixed; z-index:2147483647; inset:auto 18px 18px auto;
-  width:110px; height:110px; display:flex; align-items:flex-end; justify-content:center;
+  width:72px; height:72px; display:flex; align-items:flex-end; justify-content:center;
   pointer-events:auto;
 `;
 wrap.setAttribute('data-pet', 'wrap');
@@ -20,87 +30,94 @@ wrap.setAttribute('data-pet', 'wrap');
 const img = document.createElement('img');
 img.alt = 'PET avatar';
 img.style.cssText = `
-  width:100px; height:100px; object-fit:contain; cursor:grab;
+  width:72px; height:72px; object-fit:contain; cursor:grab;
   filter: drop-shadow(0 6px 10px rgba(0,0,0,.18));
+  animation: petFloat 3s ease-in-out infinite;
 `;
 wrap.appendChild(img);
 
-// Speech bubble with tail (right/left auto)
+// Add keyframes for floating animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes petFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+`;
+document.head.appendChild(style);
+
 const bubble = document.createElement('div');
-bubble.className = 'pet-bubble';
 bubble.style.cssText = `
-  position:absolute; bottom:92px; right:0; max-width:260px;
+  position:absolute; bottom:66px; right:0; max-width:220px;
   background:#fff; color:#2b2723; border:1.5px solid #e1d6cf; border-radius:12px;
-  padding:8px 10px; font:13px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  padding:8px 10px; font:13px/1.3 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
   box-shadow:0 8px 22px rgba(0,0,0,.10), 0 1px 6px rgba(0,0,0,.06);
   display:none;
 `;
 wrap.appendChild(bubble);
 
-// Tail via :after
-const style = document.createElement('style');
-style.textContent = `
-  .pet-bubble { position:absolute; }
-  .pet-bubble.show { display:block; }
-  .pet-bubble.right::after,
-  .pet-bubble.left::after {
-    content:""; position:absolute; width:0; height:0; border:10px solid transparent;
-  }
-  .pet-bubble.right::after {
-    right:-6px; bottom:10px;
-    border-left-color:#fff; filter:drop-shadow(1px 0 0 #e1d6cf);
-  }
-  .pet-bubble.left::after {
-    left:-6px; bottom:10px;
-    border-right-color:#fff; filter:drop-shadow(-1px 0 0 #e1d6cf);
-  }
-`;
-document.documentElement.appendChild(style);
-
 document.documentElement.appendChild(wrap);
 
-// ---------- Utils ----------
-function positionBubble() {
-  const r = wrap.getBoundingClientRect();
-  const spaceRight = window.innerWidth - r.right;
-  const spaceLeft  = r.left;
-  const preferRight = spaceRight >= 220 || spaceRight > spaceLeft;
-  bubble.classList.toggle('right', preferRight);
-  bubble.classList.toggle('left', !preferRight);
-  bubble.style.bottom = '92px';
-  bubble.style.right  = preferRight ? '0' : 'auto';
-  bubble.style.left   = preferRight ? 'auto' : '0';
-}
-function showBubble(text, ms) {
+//---------- Helpers ----------
+function setBubble(text) {
   if (!text) return;
-  positionBubble();
   bubble.textContent = text;
-  bubble.classList.add('show');
-  clearTimeout(showBubble._t);
-  const dur = Math.max(2200, Math.min(7000, ms || 3500));
-  showBubble._t = setTimeout(() => bubble.classList.remove('show'), dur);
+  bubble.style.display = 'block';
+  clearTimeout(setBubble._t);
+  setBubble._t = setTimeout(()=> bubble.style.display = 'none', 4200);
 }
-function speak(text) { showBubble(text); } // visual only
 
-// Always load avatar from the packaged assets
+function speakNow(text){
+  setBubble(text);
+  
+  // Text-to-speech only (removed sound effects)
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1; u.pitch = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch {}
+}
+
+// Get random line from available lines (custom + defaults)
+function getRandomLine(customLines = []) {
+  const allLines = [...customLines, ...DEFAULTS];
+  return allLines[Math.floor(Math.random() * allLines.length)];
+}
+
+// Load avatar with robust fallback: try page root(./) then extension asset
 function setAvatar(file){
-  const name = (file || 'brown_dog_nobg.png').trim();
-  img.src = chrome.runtime.getURL(`assets/${name}`);
+  if (!file) return;
+  const name = file.trim();
+  img.src = `./${name}`;
+  img.onerror = () => { img.onerror = null; img.src = chrome.runtime.getURL(`assets/${name}`); };
 }
 
 // ---------- Drag to move & save position ----------
 (function makeDraggable(){
   let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+  let isDragging = false; // Track if we're actually dragging vs just clicking
+  
   wrap.addEventListener('mousedown', (e)=>{
-    dragging = true; img.style.cursor = 'grabbing';
+    dragging = true; 
+    isDragging = false; // Reset drag state
+    img.style.cursor = 'grabbing';
+    img.style.animation = 'none'; // Pause floating during drag
     startX = e.clientX; startY = e.clientY;
     const r = wrap.getBoundingClientRect();
     startLeft = r.left; startTop = r.top;
     e.preventDefault();
   });
+  
   window.addEventListener('mousemove', (e)=>{
     if (!dragging) return;
     const dx = e.clientX - startX, dy = e.clientY - startY;
+    
+    // If we've moved more than a few pixels, consider it a drag
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      isDragging = true;
+    }
+    
     const left = Math.max(0, startLeft + dx);
     const top  = Math.max(0, startTop + dy);
     wrap.style.left = left + 'px';
@@ -108,23 +125,46 @@ function setAvatar(file){
     wrap.style.right = 'auto';
     wrap.style.bottom = 'auto';
   });
-  window.addEventListener('mouseup', ()=>{
+  
+  window.addEventListener('mouseup', (e)=>{
     if (!dragging) return;
-    dragging = false; img.style.cursor = 'grab';
+    dragging = false; 
+    img.style.cursor = 'grab';
+    img.style.animation = 'petFloat 3s ease-in-out infinite'; // Resume floating
+    
+    // If we didn't drag, treat it as a click
+    if (!isDragging) {
+      handleAvatarClick();
+    }
+    
     const r = wrap.getBoundingClientRect();
     chrome.storage.local.set({ [KEYS.POS]: { x: r.left, y: r.top } });
   });
 
-  // Touch
+  // Touch support
+  let touchStartX = 0, touchStartY = 0, touchIsDragging = false;
+  
   wrap.addEventListener('touchstart', (e)=>{
     const t = e.touches[0]; if (!t) return;
-    dragging = true; startX = t.clientX; startY = t.clientY;
-    const r = wrap.getBoundingClientRect(); startLeft = r.left; startTop = r.top;
+    dragging = true; 
+    touchIsDragging = false;
+    img.style.animation = 'none'; // Pause floating during drag
+    touchStartX = startX = t.clientX; 
+    touchStartY = startY = t.clientY;
+    const r = wrap.getBoundingClientRect(); 
+    startLeft = r.left; startTop = r.top;
   }, {passive:true});
+  
   window.addEventListener('touchmove', (e)=>{
     if (!dragging) return;
     const t = e.touches[0]; if (!t) return;
     const dx = t.clientX - startX, dy = t.clientY - startY;
+    
+    // If we've moved more than a few pixels, consider it a drag
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      touchIsDragging = true;
+    }
+    
     const left = Math.max(0, startLeft + dx);
     const top  = Math.max(0, startTop + dy);
     wrap.style.left = left + 'px';
@@ -132,42 +172,35 @@ function setAvatar(file){
     wrap.style.right = 'auto';
     wrap.style.bottom = 'auto';
   }, {passive:true});
+  
   window.addEventListener('touchend', ()=>{
     if (!dragging) return;
     dragging = false;
+    img.style.animation = 'petFloat 3s ease-in-out infinite'; // Resume floating
+    
+    // If we didn't drag, treat it as a tap
+    if (!touchIsDragging) {
+      handleAvatarClick();
+    }
+    
     const r = wrap.getBoundingClientRect();
     chrome.storage.local.set({ [KEYS.POS]: { x: r.left, y: r.top } });
   });
 })();
 
-// ---------- Lines (defaults + saved) ----------
-const DEFAULTS = [
-  "Small steps still move you forward.",
-  "Momentum beats motivation—start tiny.",
-  "25-minute focus, then breathe. You’ve got this.",
-  "Done > perfect. One micro-step now.",
-  "Future you will thank you for this."
-];
-
-let customLines = [];
-let clickIndex = 0;
-
-// Clicking the pet cycles through your saved lines (or defaults if none)
-img.addEventListener('click', ()=>{
-  const pool = (customLines && customLines.length) ? customLines : DEFAULTS;
-  speak(pool[clickIndex % pool.length]);
-  clickIndex++;
-});
+// Handle avatar click/tap - speak a random line
+function handleAvatarClick() {
+  chrome.storage.local.get([KEYS.LINES], (cfg) => {
+    const customLines = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
+    const randomLine = getRandomLine(customLines);
+    speakNow(randomLine);
+  });
+}
 
 // ---------- Initial load ----------
-chrome.storage.local.get([KEYS.AVATAR, KEYS.LINES, KEYS.SPEAK, KEYS.POS], (cfg)=>{
-  // Avatar
-  setAvatar(cfg[KEYS.AVATAR]);
+chrome.storage.local.get([KEYS.AVATAR, KEYS.SPEAK, KEYS.POS], (cfg)=>{
+  setAvatar(cfg[KEYS.AVATAR] || 'brown_dog_nobg.png');
 
-  // Lines
-  if (Array.isArray(cfg[KEYS.LINES])) customLines = cfg[KEYS.LINES];
-
-  // Position
   const pos = cfg[KEYS.POS];
   if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
     wrap.style.left = pos.x + 'px';
@@ -176,89 +209,85 @@ chrome.storage.local.get([KEYS.AVATAR, KEYS.LINES, KEYS.SPEAK, KEYS.POS], (cfg)=
     wrap.style.bottom = 'auto';
   }
 
-  // If the control panel just wrote a speak-now, show it ONCE
+  // Only speak on initial load if it's very recent (within 30 seconds)
   const sp = cfg[KEYS.SPEAK];
-  if (sp && sp.text && Date.now() - (sp.at||0) < 8000) {
-    speak(sp.text);
-    chrome.storage.local.set({ [KEYS.SPEAK]: null });
+  if (sp && sp.text && Date.now() - (sp.at||0) < 30000) {
+    speakNow(sp.text);
   }
 });
 
-// ---------- Live updates from storage ----------
+// ---------- React to storage updates (avatar changes, speak requests) ----------
 chrome.storage.onChanged.addListener((changes, area)=>{
   if (area !== 'local') return;
 
-  if (changes[KEYS.AVATAR]) setAvatar(changes[KEYS.AVATAR].newValue || 'brown_dog_nobg.png');
-
-  if (changes[KEYS.LINES]) {
-    const v = changes[KEYS.LINES].newValue;
-    customLines = Array.isArray(v) ? v : [];
-    clickIndex = 0; // restart the cycle
+  if (changes[KEYS.AVATAR]) {
+    const next = changes[KEYS.AVATAR].newValue;
+    setAvatar(next || 'brown_dog_nobg.png');
   }
 
   if (changes[KEYS.SPEAK]) {
     const v = changes[KEYS.SPEAK].newValue;
-    if (v && v.text) {
-      speak(v.text);
-      chrome.storage.local.set({ [KEYS.SPEAK]: null }); // prevent repeats
+    // Only speak if it's very recent to prevent interference
+    if (v && v.text && Date.now() - (v.at||0) < 30000) {
+      speakNow(v.text);
     }
   }
 });
 
-// ---------- Gentle nudges from bg.js ----------
+// ---------- Gentle nudges + live line updates ----------
+let customLines = [];
 chrome.runtime.onMessage.addListener((msg)=>{
   if (msg?.type === 'NUDGE') {
-    const pool = (customLines && customLines.length) ? customLines : DEFAULTS;
-    speak(pool[Math.floor(Math.random()*pool.length)]);
+    chrome.storage.local.get([KEYS.LINES], (cfg)=>{
+      const customLines = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
+      const randomLine = getRandomLine(customLines);
+      speakNow(randomLine);
+    });
+  } else if (msg?.type === 'LINES_UPDATED' && Array.isArray(msg.lines)) {
+    customLines = msg.lines;
   }
 });
 
-// ---------- Page ↔ content-script bridge ----------
-// Lets your index.html post messages instead of using chrome.* directly.
+// ---------- BRIDGE: accept messages from the Control Panel web page ----------
 window.addEventListener('message', (e) => {
-  const d = e.data;
-  if (!d || typeof d !== 'object') return;
+  const data = e?.data;
+  if (!data || typeof data !== 'object') return;
 
-  // Save lines (merge + de-dupe). Also set a one-time "speak now".
-  if (d.type === 'PET_ADD_LINES' && Array.isArray(d.lines)) {
-    chrome.storage.local.get([KEYS.LINES], (cfg) => {
-      const current = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
-      const cleaned = d.lines.map(s => String(s).trim()).filter(Boolean);
-      const merged  = Array.from(new Set([...current, ...cleaned]));
-      chrome.storage.local.set({ [KEYS.LINES]: merged }, () => {
-        customLines = merged;
-        clickIndex = 0;
-        const last = cleaned[cleaned.length - 1];
-        if (last) chrome.storage.local.set({ [KEYS.SPEAK]: { text:last, at: Date.now() } });
-      });
+  if (data.type === 'PET_ADD_LINES' && Array.isArray(data.lines)) {
+    const cleaned = data.lines.map(s => String(s).trim()).filter(Boolean);
+    // Replace lines completely instead of merging to fix clearing bug
+    chrome.storage.local.set({ [KEYS.LINES]: cleaned }, () => {
+      const last = cleaned[cleaned.length - 1] || '';
+      if (last) {
+        // Don't set petSpeakNow storage, just speak directly
+        speakNow(last); // immediate feedback on the control page only
+      }
+      // the bg.js onChanged fan-out will notify other tabs
+      window.postMessage({ type: 'PET_LINES_RESPONSE', ok: true, lines: cleaned }, '*');
     });
   }
 
-  // Ask for current lines
-  if (d.type === 'PET_GET_LINES') {
-    chrome.storage.local.get([KEYS.LINES], (cfg) => {
-      const lines = Array.isArray(cfg[KEYS.LINES]) ? cfg[KEYS.LINES] : [];
-      window.postMessage({ type:'PET_LINES_RESPONSE', lines }, '*');
-    });
+  if (data.type === 'PET_SET_AVATAR' && typeof data.file === 'string') {
+    const file = data.file;
+    setAvatar(file); // instant on this page
+    chrome.storage.local.set({ [KEYS.AVATAR]: file });
   }
 
-  // Immediate speak
-  if (d.type === 'PET_SAY_NOW' && typeof d.text === 'string' && d.text.trim()) {
-    chrome.storage.local.set({ [KEYS.SPEAK]: { text: d.text.trim(), at: Date.now() } });
+  if (data.type === 'PET_SAY_NOW' && typeof data.text === 'string' && data.text.trim()) {
+    const text = data.text.trim();
+    // For direct speech requests, set storage and speak
+    chrome.storage.local.set({ [KEYS.SPEAK]: { text, at: Date.now() } });
+    speakNow(text);
   }
 
-  // Avatar set from control page (your avatar picker already works)
-  if (d.type === 'PET_SET_AVATAR' && typeof d.file === 'string') {
-    chrome.storage.local.set({ [KEYS.AVATAR]: d.file });
+  if (data.type === 'PET_RESCHEDULE') {
+    // Forward reschedule request to background script
+    chrome.runtime.sendMessage({ type: 'PET_RESCHEDULE' });
   }
 
-  // Optional: reschedule alarms, add a session (both no-ops if bg not listening)
-  if (d.type === 'PET_RESCHEDULE') chrome.runtime?.sendMessage?.({ type:'RESCHEDULE' });
-  if (d.type === 'PET_ADD_SESSION' && Number.isFinite(d.seconds)) {
-    chrome.storage.local.get([KEYS.SESS], (cfg)=>{
-      const sessions = Array.isArray(cfg[KEYS.SESS]) ? cfg[KEYS.SESS] : [];
-      sessions.push({ ts: Math.floor(Date.now()/1000), seconds: Math.max(1, Math.floor(d.seconds)) });
-      chrome.storage.local.set({ [KEYS.SESS]: sessions.slice(-2000) });
-    });
+  if (data.type === 'PET_TIMER_COMPLETE') {
+    // Timer finished - clear any pending speech and speak timer completion immediately
+    chrome.storage.local.remove([KEYS.SPEAK]);
+    speakNow("Times up. Great focus!");
   }
 });
